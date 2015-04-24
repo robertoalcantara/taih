@@ -50,6 +50,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 
 #include <xc.h>
 #include "tmr0.h"
+#include "../globals.h"
 
 /**
   Section: Global Variables Definitions
@@ -129,11 +130,36 @@ void TMR0_ISR(void)
     // clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
 
+
+
+
     // reload TMR0
     TMR0L = timer0ReloadVal8bit;
 
 
     // add your TMR0 interrupt custom code
+
+   /* Time control flags */
+    global_timer.on1ms = 1;
+    global_timer.aux_10ms++;
+
+    if (global_timer.aux_10ms == 10) {
+        global_timer.aux_10ms = 0;
+        global_timer.on10ms = 1;
+        global_timer.aux_100ms++;
+
+        if (global_timer.aux_100ms == 10 ) {
+            global_timer.aux_100ms = 0;
+            global_timer.on100ms = 1;
+            global_timer.aux_1s++;
+        }
+        if (global_timer.aux_1s == 10 ) {
+            global_timer.aux_1s = 0;
+            global_timer.on1seg = 1;
+        }
+    }
+
+
 }
 
 /**
