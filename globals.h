@@ -10,8 +10,12 @@
 
 
 #ifndef GLOBALS_H
+
 #define	GLOBALS_H
 #define RX_LEN 256
+
+
+#define ERASE_FLASH_BLOCKSIZE 64
 
 extern unsigned char rx_data_available;
 extern unsigned char rx_data[RX_LEN];

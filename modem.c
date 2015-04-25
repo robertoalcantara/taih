@@ -7,9 +7,13 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "mcc_generated_files/mcc.h"
+
 #include "globals.h"
 #include "modem.h"
 #include "expect.h"
+#include "flash_io.h"
+
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
 #define _expect(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++; RX_DATA_ACK; };
@@ -20,8 +24,8 @@
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
-#define SUCCESS 200 /* Final da maquina de estado com sucesso*/
-#define DELAY_ATCBAND 20 /* delay em s apos um cband - 10 recomendando producao*/
+#define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
+#define DELAY_ATCBAND 3 /* delay em s apos um cband - 10 recomendando producao*/
 
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
@@ -33,7 +37,7 @@ unsigned char indice_banda = 0;
 unsigned char tmp;
 unsigned char location_tmp;
 unsigned char str_tmp[50];
-unsigned char buffer_str[900];
+unsigned char buffer_str[600];
 unsigned char *ptr;
 
 void undervoltage( void );
@@ -44,9 +48,6 @@ unsigned char modem_setup ( void );
 
 #define NUM_BANDS 8
 const unsigned char band_modes[NUM_BANDS][16] = { "EGSM_MODE","DCS_MODE","GSM850_MODE","PCS_MODE","EGSM_DCS_MODE","GSM850_PCS_MODE","EGSM_PCS_MODE","ALL_BAND" };
-
-
-
 
 
 void modem_async_parser(void)  {
@@ -149,19 +150,17 @@ void strcat_ceng(char* destino, char* origem) {
 
                     case '+' :
                         ch = '\n';
-                        *destino = ch;
-                        *destino++;
-                        break;
+                        goto def;
 
                     case ':' :
                         ch = '+';
-                        *destino = ch;
-                        *destino++;
-                        break;
-
+                        goto def;
+def:
                     default:
+                        flash_write_char(ch);
                         *destino = ch;
                         *destino++;
+
                 }
     }
     *destino = 0; //termina a string
@@ -240,6 +239,8 @@ unsigned char modem_query_erbs ( void ) {
             break;
 
         case 1:
+            flash_write_char('X');
+            flash_commit();
             return SUCCESS;
 
     }
@@ -265,14 +266,13 @@ unsigned char modem_state_machine(void) {
                 state_main++;
                 state_location = 0; /* Zera a maq de estado de query de redes */
                 state_band = 0; /* Zera a maq de estado da sequencia das bandas */
-                strcpy(buffer_str,"");
             }
             break;
 
         case 2:
             if (modem_query_erbs() == SUCCESS) {
                 state_main++;
-                /*ToDo*/
+
             }
             break;
     }
