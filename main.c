@@ -21,6 +21,8 @@ unsigned int rx_data_index = 0;
 
 unsigned char battery_level = 0;
 
+char state_modem = 0;
+
 unsigned long flash_pointer = 0x1000;
 
 /*
@@ -33,15 +35,32 @@ void setup (void) {
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-    MODEM_PWR_SetLow();
-    MODEM_PWR_SetHigh();
+    VBAT_SetAnalogMode();
+    VBAT_CONTROL_SetLow();
 }
 
 
+void check_vbat(void){
+    unsigned int vbat;
+    
+    vbat = VBAT_GetValue();
+    if (vbat<200) {
+        if ( global_timer.on1seg) {LED_D7_Toggle();}
+    }
+    
+}
+
+int power_modem( char enable ) {
 
 
-int start_modem(void) {
-    static char state_modem = 0;
+    if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
+    if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
+
+    if ( enable == 0 ) {
+        printf("AT+CPOWD=1\r\n");
+        return;
+
+    }
 
     switch (state_modem) {
         case 0:
@@ -50,13 +69,12 @@ int start_modem(void) {
             break;
 
         case 1:
-            //aguarda em BAIXO
-            MODEM_PWR_SetLow();
+            MODEM_PWR_SetHigh();
             if ( global_timer.on1seg ) state_modem++;
             break;
 
         case 2:
-            MODEM_PWR_SetHigh();
+            MODEM_PWR_SetLow();
             state_modem++;
     }
 
@@ -119,14 +137,27 @@ int main() {
 
     ////////////////////////////
 
+    char modem_status;//tmp
+    char cnt = 0;
 
+    modem_status = 1;
     setup ();
-
-
 
     while (1) {
 
-        start_modem(); //maquina de estado de configuracao do modem
+        //if ( global_timer.on1seg) { check_vbat(); }
+        
+       if ( global_timer.on1seg){ power_modem( modem_status ); } //maquina de estado de configuracao do modem
+
+        if (PWR_STAT_GetValue()==!modem_status) {
+            /* Modem ainda em estado inconsistente */
+            if ( global_timer.on100ms) { LED_D6_Toggle(); }
+            if ( global_timer.on1seg) { cnt++; }
+
+            if (cnt > 10) { state_modem=0; }
+            
+            goto error;
+        }
 
         modem_state_machine();
 
@@ -141,6 +172,10 @@ int main() {
         }
        // modem_async_parser(); //Ja analiza as mensagens assincronas
 
+
+
+        
+error:
         /* flags de tempo */
         global_timer.on1seg  = 0;
         global_timer.on100ms = 0;

@@ -137,6 +137,23 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #define BTN_ResetPullup()   do { WPUB0 = 0; } while(0)
 #define BTN_SetAnalogMode()   do { ANSB0 = 1; } while(0)
 #define BTN_SetDigitalMode()   do { ANSB0 = 0; } while(0)
+// get/set PWR_STAT aliases
+#define PWR_STAT_TRIS               TRISB5
+#define PWR_STAT_LAT                LATB5
+#define PWR_STAT_PORT               PORTBbits.RB5
+#define PWR_STAT_WPU                WPUB5
+#define PWR_STAT_ANS                ANSB5
+#define PWR_STAT_SetHigh()    do { LATB5 = 1; } while(0)
+#define PWR_STAT_SetLow()   do { LATB5 = 0; } while(0)
+#define PWR_STAT_Toggle()   do { LATB5 = ~LATB5; } while(0)
+#define PWR_STAT_GetValue()         PORTBbits.RB5
+#define PWR_STAT_SetDigitalInput()    do { TRISB5 = 1; } while(0)
+#define PWR_STAT_SetDigitalOutput()   do { TRISB5 = 0; } while(0)
+
+#define PWR_STAT_SetPullup()    do { WPUB5 = 1; } while(0)
+#define PWR_STAT_ResetPullup()   do { WPUB5 = 0; } while(0)
+#define PWR_STAT_SetAnalogMode()   do { ANSB5 = 1; } while(0)
+#define PWR_STAT_SetDigitalMode()   do { ANSB5 = 0; } while(0)
 // get/set MODEM_PWR aliases
 #define MODEM_PWR_TRIS               TRISC0
 #define MODEM_PWR_LAT                LATC0

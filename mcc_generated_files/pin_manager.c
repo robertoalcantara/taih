@@ -55,7 +55,7 @@ void PIN_MANAGER_Initialize(void)
 
     LATB = 0x00;
     TRISB = 0xFF;
-    ANSELB = 0x3E;
+    ANSELB = 0x1E;
     WPUB = 0x00;
 
     LATC = 0x00;

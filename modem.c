@@ -21,7 +21,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de estado com sucesso*/
-#define DELAY_ATCBAND 10 /* delay em s apos um cband - 10 recomendando producao*/
+#define DELAY_ATCBAND 20 /* delay em s apos um cband - 10 recomendando producao*/
 
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
@@ -109,7 +109,7 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 4:
-            _tx("AT+CENG=1\r\n", state_setup); //eng mode
+            _tx("AT+CENG=1,1\r\n", state_setup); //eng mode
             break;
 
         case 5:
@@ -130,6 +130,43 @@ setup_error:
 
 }
 
+void strcat_ceng(char* destino, char* origem) {
+    //apenas concatena em destino a origem sem determinados caracteres (formato ceng)
+    char ch;
+
+    while ( (ch=*origem++)!= 0  ) {
+
+        switch( ch ) {
+                    case '\n' :
+                    case 'O' :
+                    case 'K' :
+                    case 'C' :
+                    case 'E' :
+                    case 'N' :
+                    case 'G' :
+                    case ' ' :
+                        break;
+
+                    case '+' :
+                        ch = '\n';
+                        *destino = ch;
+                        *destino++;
+                        break;
+
+                    case ':' :
+                        ch = '+';
+                        *destino = ch;
+                        *destino++;
+                        break;
+
+                    default:
+                        *destino = ch;
+                        *destino++;
+                }
+    }
+    *destino = 0; //termina a string
+    
+}
 
 unsigned char modem_query_band( void ) {
 
@@ -143,8 +180,6 @@ unsigned char modem_query_band( void ) {
         case 0:
             sprintf( str_tmp, "AT+CBAND=%s\r\n", band_modes[indice_banda] );
             _tx( str_tmp , state_band);
-            //USART_tx ( str_tmp );
-            //state_band++;
             break;
         case 1:
             _nonblock_wait_start( DELAY_ATCBAND, state_band );
@@ -161,28 +196,8 @@ unsigned char modem_query_band( void ) {
              /* o buffer eh importante na sequencia, mante-lo intocado*/
              break;
         case 5:
-            strcat( buffer_str, rx_data ); //Funciona ok, mas leva muito lixo.
-            /*while( '\0' != rx_data[idx] ) {
-                switch( rx_data[idx] ) {
-                    case '\n' :
-                    case 'O' :
-                    case 'K' :
-                    case '+' :
-                    case 'C' :
-                    case 'E' :
-                    case 'N' :
-                    case 'G' :
-                    case ' ' :
-                        break;
-                        
-                    default:
-                        ptr = &buffer_str;
-                        *ptr = rx_data[idx];
-                        ptr++;
-                        *ptr = 0;
-                }
-                idx++;
-            }*/
+            strcat_ceng( buffer_str, rx_data );
+            //strcat( buffer_str, rx_data ); //Funciona ok, mas leva muito lixo.
 
             RX_DATA_ACK; /*Sinaiza que tratou o buffer*/
             /* chegou os dados da banda
@@ -208,6 +223,7 @@ unsigned char modem_query_band( void ) {
 
 band_error:
     state_band = 0;
+    strcpy(buffer_str,"");
     RX_DATA_ACK; //descarta o buffer
     return 0;
 
