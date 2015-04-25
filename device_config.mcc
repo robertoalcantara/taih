@@ -81,7 +81,7 @@
             <setting name="EBTRB" option="OFF"/>
             <setting name="generateConfigBits" option="true"/>
             <file checksum="2665823090" modified="false" name="mcc.c" path="mcc_generated_files/mcc.c"/>
-            <file checksum="3704363633" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
+            <file checksum="4291502357" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
         </manager>
     </managers>
     <modules>
@@ -170,6 +170,11 @@
             <setting name="ADI" option="false"/>
             <file checksum="1369489312" modified="false" name="adc.c" path="mcc_generated_files/adc.c"/>
             <file checksum="3116587557" modified="false" name="adc.h" path="mcc_generated_files/adc.h"/>
+        </module>
+        <module generated="true" mode="Memory" name="MEMORY" order="4" reloadPin="manual" type="pfm_control">
+            <setting name="useEE" option="true"/>
+            <file checksum="1135174820" modified="false" name="memory.c" path="mcc_generated_files/memory.c"/>
+            <file checksum="56696237" modified="false" name="memory.h" path="mcc_generated_files/memory.h"/>
         </module>
     </modules>
 </configuration>

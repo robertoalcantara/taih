@@ -33,7 +33,7 @@ unsigned char indice_banda = 0;
 unsigned char tmp;
 unsigned char location_tmp;
 unsigned char str_tmp[50];
-unsigned char buffer_str[512];
+unsigned char buffer_str[900];
 
 void undervoltage( void );
 void modem_async_parser( void );
@@ -43,6 +43,10 @@ unsigned char modem_setup ( void );
 
 #define NUM_BANDS 8
 const unsigned char band_modes[NUM_BANDS][16] = { "EGSM_MODE","DCS_MODE","GSM850_MODE","PCS_MODE","EGSM_DCS_MODE","GSM850_PCS_MODE","EGSM_PCS_MODE","ALL_BAND" };
+
+
+
+
 
 void modem_async_parser(void)  {
 
