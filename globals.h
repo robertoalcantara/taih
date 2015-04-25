@@ -12,13 +12,13 @@
 #ifndef GLOBALS_H
 
 #define	GLOBALS_H
-#define RX_LEN 256
+#define RX_BUFFER_SIZE 512
 
 
 #define ERASE_FLASH_BLOCKSIZE 64
 
 extern unsigned char rx_data_available;
-extern unsigned char rx_data[RX_LEN];
+extern unsigned char rx_data[RX_BUFFER_SIZE];
 extern unsigned int rx_data_index;
 
 extern unsigned char battery_level;
@@ -38,7 +38,7 @@ struct t_global_timer {
 
 
 int x;
-#define RX_DATA_ACK rx_data_index = 0; rx_data_available = 0; rx_data[0]=0; for (x=0;x<RX_LEN;x++) rx_data[x]=0;
+#define RX_DATA_ACK rx_data_index = 0; rx_data_available = 0; rx_data[0]=0; for (x=0;x<RX_BUFFER_SIZE;x++) rx_data[x]=0;
 
 extern unsigned long flash_pointer;
 

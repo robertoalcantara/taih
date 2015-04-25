@@ -25,7 +25,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 3 /* delay em s apos um cband - 10 recomendando producao*/
+#define DELAY_ATCBAND 15 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
@@ -37,7 +37,6 @@ unsigned char indice_banda = 0;
 unsigned char tmp;
 unsigned char location_tmp;
 unsigned char str_tmp[50];
-unsigned char buffer_str[600];
 unsigned char *ptr;
 
 void undervoltage( void );
@@ -131,8 +130,8 @@ setup_error:
 
 }
 
-void strcat_ceng(char* destino, char* origem) {
-    //apenas concatena em destino a origem sem determinados caracteres (formato ceng)
+void fmt_ceng_flash(char* origem) {
+    //formata e grava na flash a resposta do CENG
     char ch;
 
     while ( (ch=*origem++)!= 0  ) {
@@ -158,12 +157,8 @@ void strcat_ceng(char* destino, char* origem) {
 def:
                     default:
                         flash_write_char(ch);
-                        *destino = ch;
-                        *destino++;
-
                 }
     }
-    *destino = 0; //termina a string
     
 }
 
@@ -195,24 +190,8 @@ unsigned char modem_query_band( void ) {
              /* o buffer eh importante na sequencia, mante-lo intocado*/
              break;
         case 5:
-            strcat_ceng( buffer_str, rx_data );
-            //strcat( buffer_str, rx_data ); //Funciona ok, mas leva muito lixo.
-
+            fmt_ceng_flash( rx_data ); //formata e grava na flash
             RX_DATA_ACK; /*Sinaiza que tratou o buffer*/
-            /* chegou os dados da banda
-             * at+ceng?
-                +CENG: 1,0
-
-                +CENG: 0,"0799,61,00,724,11,18,61ab,08,00,4fa1,255"
-                +CENG: 1,"0678,43,60,724,11,4fa1"
-                +CENG: 2,"0664,37,33,724,11,4fa1"
-                +CENG: 3,"0686,27,13,724,11,4fa1"
-                +CENG: 4,"0802,26,52,724,11,4fa1"
-                +CENG: 5,"0796,25,16,724,11,4fa1"
-                +CENG: 6,"0806,48,53,000,00,0"
-
-                OK
-              */
             indice_banda++;
             state_band = 0;
             break;
@@ -222,7 +201,6 @@ unsigned char modem_query_band( void ) {
 
 band_error:
     state_band = 0;
-    strcpy(buffer_str,"");
     RX_DATA_ACK; //descarta o buffer
     return 0;
 
@@ -239,7 +217,7 @@ unsigned char modem_query_erbs ( void ) {
             break;
 
         case 1:
-            flash_write_char('X');
+            flash_write_char('!');
             flash_commit();
             return SUCCESS;
 

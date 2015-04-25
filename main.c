@@ -18,7 +18,7 @@
 
 
 unsigned char rx_data_available = 0;
-unsigned char rx_data[256];
+unsigned char rx_data[RX_BUFFER_SIZE];
 unsigned int rx_data_index = 0;
 
 unsigned char battery_level = 0;
@@ -123,7 +123,7 @@ int main() {
         
        if ( global_timer.on1seg){ power_modem( modem_status ); } //maquina de estado de configuracao do modem
 
-        /*if (PWR_STAT_GetValue()==!modem_status) {
+        if (PWR_STAT_GetValue()==!modem_status) {
             // Modem ainda em estado inconsistente 
             if ( global_timer.on100ms) { LED_D6_Toggle(); }
             if ( global_timer.on1seg) { cnt++; }
@@ -131,7 +131,7 @@ int main() {
             if (cnt > 10) { state_modem=0; }
             
             goto error;
-        }*/
+        }
 
         modem_state_machine();
 
