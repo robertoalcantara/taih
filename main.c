@@ -128,7 +128,7 @@ int main() {
 
         start_modem(); //maquina de estado de configuracao do modem
 
-       modem_state_machine();
+        modem_state_machine();
 
        
         if ( global_timer.on1seg)

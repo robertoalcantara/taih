@@ -21,7 +21,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de estado com sucesso*/
-#define DELAY_ATCBAND 2 /* delay em s apos um cband - 10 recomendando producao*/
+#define DELAY_ATCBAND 10 /* delay em s apos um cband - 10 recomendando producao*/
 
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
@@ -34,6 +34,7 @@ unsigned char tmp;
 unsigned char location_tmp;
 unsigned char str_tmp[50];
 unsigned char buffer_str[900];
+unsigned char *ptr;
 
 void undervoltage( void );
 void modem_async_parser( void );
@@ -132,6 +133,8 @@ setup_error:
 
 unsigned char modem_query_band( void ) {
 
+    unsigned char idx;
+
     if (indice_banda >= NUM_BANDS)  {
         return SUCCESS;
     }
@@ -154,10 +157,33 @@ unsigned char modem_query_band( void ) {
             break;
         case 4:
              _expect_keep_buffer("OK", 5, state_band, band_error);
+             idx = 0;
              /* o buffer eh importante na sequencia, mante-lo intocado*/
              break;
         case 5:
-            strcat( buffer_str, rx_data );
+            strcat( buffer_str, rx_data ); //Funciona ok, mas leva muito lixo.
+            /*while( '\0' != rx_data[idx] ) {
+                switch( rx_data[idx] ) {
+                    case '\n' :
+                    case 'O' :
+                    case 'K' :
+                    case '+' :
+                    case 'C' :
+                    case 'E' :
+                    case 'N' :
+                    case 'G' :
+                    case ' ' :
+                        break;
+                        
+                    default:
+                        ptr = &buffer_str;
+                        *ptr = rx_data[idx];
+                        ptr++;
+                        *ptr = 0;
+                }
+                idx++;
+            }*/
+
             RX_DATA_ACK; /*Sinaiza que tratou o buffer*/
             /* chegou os dados da banda
              * at+ceng?
