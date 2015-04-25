@@ -27,6 +27,7 @@
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
 #define DELAY_ATCBAND 15 /* delay em s apos um cband - 15 recomendando producao*/
 
+unsigned char state_modem = 0;
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
 unsigned char state_main = 0;
@@ -47,6 +48,41 @@ unsigned char modem_setup ( void );
 
 #define NUM_BANDS 8
 const unsigned char band_modes[NUM_BANDS][16] = { "EGSM_MODE","DCS_MODE","GSM850_MODE","PCS_MODE","EGSM_DCS_MODE","GSM850_PCS_MODE","EGSM_PCS_MODE","ALL_BAND" };
+
+
+
+
+int power_modem( char enable ) {
+
+
+    if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
+    if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
+
+    if ( enable == 0 ) {
+        printf("AT+CPOWD=1\r\n");
+        return;
+    }
+
+    switch (state_modem) {
+        case 0:
+            MODEM_PWR_SetLow();
+            if ( global_timer.on1seg ) state_modem++;
+            break;
+
+        case 1:
+            MODEM_PWR_SetHigh();
+            if ( global_timer.on1seg ) state_modem++;
+            break;
+
+        case 2:
+            MODEM_PWR_SetLow();
+            state_modem++;
+    }
+
+}
+
+
+
 
 
 void modem_async_parser(void)  {
@@ -226,8 +262,25 @@ unsigned char modem_query_erbs ( void ) {
 
 }
 
-/* Maquina de estados global*/
-unsigned char modem_state_machine(void) {
+/* Maquina de estados do modem
+ * Verifica se ele esta no estado de energia que deveria.
+ *
+ */
+unsigned char modem_handler(void) {
+    static unsigned char cnt_timeout;
+
+    if ( global_timer.on1seg){ power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
+
+    if (PWR_STAT_GetValue()==!modem_power_status) {
+        // Modem ainda em estado inconsistente 
+        if ( global_timer.on100ms) { LED_D6_Toggle(); }
+        if ( global_timer.on1seg) { cnt_timeout++; }
+
+        if (cnt_timeout > 10) { state_modem=0; }
+
+        return 0;
+    }
+
 
 
     switch(state_main) {
@@ -255,7 +308,7 @@ unsigned char modem_state_machine(void) {
             break;
     }
     
-    return 0;
+    return (1);
 }
 
 

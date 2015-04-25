@@ -23,7 +23,7 @@ unsigned int rx_data_index = 0;
 
 unsigned char battery_level = 0;
 
-char state_modem = 0;
+unsigned char modem_power_status = 0;
 
 /*
  *
@@ -48,36 +48,6 @@ void check_vbat(void){
         if ( global_timer.on1seg) {LED_D7_Toggle();}
     }
     
-}
-
-int power_modem( char enable ) {
-
-
-    if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
-    if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
-
-    if ( enable == 0 ) {
-        printf("AT+CPOWD=1\r\n");
-        return;
-
-    }
-
-    switch (state_modem) {
-        case 0:
-            MODEM_PWR_SetLow();
-            if ( global_timer.on1seg ) state_modem++;
-            break;
-
-        case 1:
-            MODEM_PWR_SetHigh();
-            if ( global_timer.on1seg ) state_modem++;
-            break;
-
-        case 2:
-            MODEM_PWR_SetLow();
-            state_modem++;
-    }
-
 }
 
 
@@ -111,33 +81,26 @@ void serial_buffer_copy(void){
  */
 int main() {
 
-    char modem_status;//tmp
     char cnt = 0;
 
-    modem_status = 1;
     setup ();
 
+    MODEM_ENABLE;
+    
     while (1) {
 
         //if ( global_timer.on1seg) { check_vbat(); }
         
-       if ( global_timer.on1seg){ power_modem( modem_status ); } //maquina de estado de configuracao do modem
-
-        if (PWR_STAT_GetValue()==!modem_status) {
-            // Modem ainda em estado inconsistente 
-            if ( global_timer.on100ms) { LED_D6_Toggle(); }
-            if ( global_timer.on1seg) { cnt++; }
-
-            if (cnt > 10) { state_modem=0; }
-            
+        if (0 == modem_handler() ) {
+            /* Modem nao esta como deveria*/
             goto error;
         }
 
-        modem_state_machine();
-
        
-        if ( global_timer.on1seg)
+        if ( global_timer.on1seg) {
+            //vivo
             LED_D6_Toggle();
+        }
         
 
         /* Verifica se existe dado na serial para processar */
@@ -145,8 +108,6 @@ int main() {
             serial_buffer_copy();
         }
        // modem_async_parser(); //Ja analiza as mensagens assincronas
-
-
 
         
 error:

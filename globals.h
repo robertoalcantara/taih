@@ -23,6 +23,8 @@ extern unsigned int rx_data_index;
 
 extern unsigned char battery_level;
 
+unsigned char modem_power_status;
+
 
 struct t_global_timer {
       char on1seg;
