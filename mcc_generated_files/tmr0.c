@@ -130,9 +130,6 @@ void TMR0_ISR(void)
     // clear the TMR0 interrupt flag
     INTCONbits.TMR0IF = 0;
 
-
-
-
     // reload TMR0
     TMR0L = timer0ReloadVal8bit;
 

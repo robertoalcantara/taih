@@ -25,6 +25,8 @@ unsigned char battery_level = 0;
 
 unsigned char modem_power_status = 0;
 
+unsigned char sinalizacao_status = 0;
+
 /*
  *
  */
@@ -37,6 +39,8 @@ void setup (void) {
 
     VBAT_SetAnalogMode();
     VBAT_CONTROL_SetLow();
+    LED_D6_SetHigh(); // Ligando
+
 }
 
 
@@ -51,6 +55,54 @@ void check_vbat(void){
 }
 
 
+void handler_sinalizacao(void) {
+    static unsigned char cnt_live = 0;
+    static unsigned char cnt_ack = 0;
+
+    if ( global_timer.on1seg ) cnt_live++;
+
+    if ( global_timer.on100ms ) cnt_ack++;
+
+
+    switch (sinalizacao_status & 0x0F) {
+        case SINALIZACAO_NORMAL:
+            if ( 2 == cnt_live ) {
+                cnt_live = 0;
+                LED_D6_SetHigh();
+            } else {
+                if (global_timer.on100ms) {
+                    LED_D6_SetLow();
+                }
+            }
+            break;
+
+        case SINALIZACAO_MODEM_FAULT:
+            if ( global_timer.on100ms) {
+                LED_D6_Toggle();
+                LED_D7_LAT = !LED_D6_LAT;
+            }
+            return; /* Afeta o D7, nem olha as sinalizacoes temporarias */
+
+        case SINALIZACAO_SIM_FAULT:
+            if ( global_timer.on100ms) {
+                LED_D6_Toggle();
+                LED_D7_LAT = LED_D6_LAT;
+            }
+            return; /* Afeta o D7 */
+    }
+
+    //essa sinalizaco eh temporaria
+    switch (sinalizacao_status & 0xF0) {
+        case SINALIZACAO_MSG_ACK:
+            LED_D7_SetHigh();
+            if ( global_timer.on10ms) {
+                sinalizacao_status = (0x0F & sinalizacao_status);
+                LED_D7_SetLow();
+            }
+            break;
+            
+    }
+}
 
 
 void serial_buffer_copy(void){
@@ -65,8 +117,8 @@ void serial_buffer_copy(void){
         rx_data[ rx_data_index ] = aux;
         rx_data_index++;
         if ( aux == '\n' ) {
+            SINALIZA_MSG_ACK;
             rx_data_available = 1;
-            LED_D7_Toggle();
             break;
         }
 
@@ -84,23 +136,24 @@ int main() {
     char cnt = 0;
 
     setup ();
-
+    SINALIZA_NORMAL;
+    
     MODEM_ENABLE;
     
     while (1) {
+        handler_sinalizacao();
 
         //if ( global_timer.on1seg) { check_vbat(); }
         
-        if (0 == modem_handler() ) {
-            /* Modem nao esta como deveria*/
-            goto error;
+        if ( global_timer.on100ms ) {
+            /* Maquina do Modem rodando em compasso de 100ms */
+            if (0 == modem_handler() ) {
+                /* Modem nao esta como deveria*/
+                goto error;
+            }
         }
 
-       
-        if ( global_timer.on1seg) {
-            //vivo
-            LED_D6_Toggle();
-        }
+        
         
 
         /* Verifica se existe dado na serial para processar */

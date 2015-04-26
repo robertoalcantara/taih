@@ -25,19 +25,19 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 15 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 2 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
 unsigned char state_main = 0;
 unsigned char state_band = 0;
-
+unsigned char state_gprs = 0;
 
 unsigned char indice_banda = 0;
 unsigned char tmp;
 unsigned char location_tmp;
-unsigned char str_tmp[50];
+unsigned char str_tmp[150];
 unsigned char *ptr;
 
 void undervoltage( void );
@@ -153,6 +153,14 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 6:
+            _tx("AT+CMEE=2\r\n", state_setup); //eng mode
+            break;
+
+        case 7:
+            _expect("OK", 2, state_setup, setup_error);
+            break;
+
+        case 8:
             return SUCCESS; /* END */
 
     }
@@ -262,6 +270,77 @@ unsigned char modem_query_erbs ( void ) {
 
 }
 
+
+unsigned char modem_enter_gprs( void ) {
+    switch (state_gprs) {
+
+        case 0:
+            _tx("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n", state_gprs);
+            break;
+
+        case 1:
+            _expect_keep_buffer("OK", 5, state_gprs, sapbr_error);
+            break;
+
+        /*case 4:
+            _tx("AT+SAPBR=3,1,\"APN\",\"zap.vivo.com.br\"\r\n", state_gprs);
+            break;
+            
+        case 5:
+            _expect("OK", 5, state_gprs, gprs_error);
+            break;
+
+        case 6:
+            _tx("AT+SAPBR=3,1,\"USER\",\"vivo\"\r\n", state_gprs);
+            break;
+
+        case 7:
+            _expect("OK", 5, state_gprs, gprs_error);
+            break;
+
+        case 8:
+            _tx("AT+SAPBR=3,1,\"PWD\",\"vivo\"\r\n", state_gprs);
+            break;
+
+        case 9:
+            _expect("OK", 5, state_gprs, gprs_error);
+            break;
+
+        case 10:
+            _tx("AT+SAPBR=1,1\r\n", state_gprs);
+            break;
+
+        case 11:
+            _expect("OK", 5, state_gprs, gprs_error);
+            break;
+            
+        case 12:
+            return SUCCESS;*/
+
+    }
+
+    return 0;
+    
+
+sapbr_error:
+    //nao chegou o ok. Precisamos ver o que foi.
+    if ( strstr(rx_data, "SIM not inserted") ) {
+        /* Nao tem SIM CARD.*/
+        SINALIZA_SIM_FAULT;
+        state_gprs = 0;
+        RX_DATA_ACK; 
+        return 0;
+        
+    }
+
+gprs_error:
+    state_gprs = 0;
+    RX_DATA_ACK; //descarta o buffer
+    return 0;
+}
+
+
+
 /* Maquina de estados do modem
  * Verifica se ele esta no estado de energia que deveria.
  *
@@ -272,8 +351,8 @@ unsigned char modem_handler(void) {
     if ( global_timer.on1seg){ power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
 
     if (PWR_STAT_GetValue()==!modem_power_status) {
-        // Modem ainda em estado inconsistente 
-        if ( global_timer.on100ms) { LED_D6_Toggle(); }
+        // Modem ainda em estado inconsistente
+        SINALIZA_MODEM_FAULT;
         if ( global_timer.on1seg) { cnt_timeout++; }
 
         if (cnt_timeout > 10) { state_modem=0; }
@@ -282,31 +361,41 @@ unsigned char modem_handler(void) {
     }
 
 
+    if ( 1 == modem_power_status ) {
+        /* Sem o modem estar ligado nao faz sentido executar a maquina...*/
+        switch(state_main) {
 
-    switch(state_main) {
-
-        case 0:
-            /* Zerar  a maquina de configuracao do modem */
-            state_setup = 0;
-            state_main++;
-            break;
-
-        case 1:
-            /* Esperar a maquina de config do modem encerrar */
-            if (modem_setup() == SUCCESS) {
+            case 0:
+                /* Zerar  a maquina de configuracao do modem */
+                state_setup = 0;
                 state_main++;
-                state_location = 0; /* Zera a maq de estado de query de redes */
-                state_band = 0; /* Zera a maq de estado da sequencia das bandas */
-            }
-            break;
+                break;
 
-        case 2:
-            if (modem_query_erbs() == SUCCESS) {
-                state_main++;
+            case 1:
+                /* Esperar a maquina de config do modem encerrar */
+                if (modem_setup() == SUCCESS) {
+                    state_main++;
+                    state_location = 0; /* Zera a maq de estado de query de redes */
+                    state_band = 0; /* Zera a maq de estado da sequencia das bandas */
 
-            }
-            break;
+                    state_main = 2; /** DEBUG !!!! **/
+                }
+                break;
+
+            case 2:
+                if (modem_query_erbs() == SUCCESS) {
+                    state_main++;
+
+                }
+                break;
+
+            case 3:
+                if (modem_enter_gprs() == SUCCESS) {
+                    state_main++;
+                }
+        }
     }
+
     
     return (1);
 }

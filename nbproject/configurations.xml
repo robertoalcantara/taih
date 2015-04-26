@@ -17,6 +17,8 @@
       </logicalFolder>
       <itemPath>globals.h</itemPath>
       <itemPath>modem.h</itemPath>
+      <itemPath>expect.h</itemPath>
+      <itemPath>flash_io.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -38,10 +40,8 @@
       </logicalFolder>
       <itemPath>main.c</itemPath>
       <itemPath>expect.c</itemPath>
-      <itemPath>expect.h</itemPath>
       <itemPath>modem.c</itemPath>
       <itemPath>flash_io.c</itemPath>
-      <itemPath>flash_io.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -169,7 +169,7 @@
         <property key="memories.flashdata" value="true"/>
         <property key="memories.id" value="true"/>
         <property key="memories.programmemory" value="true"/>
-        <property key="memories.programmemory.end" value="0x2fff"/>
+        <property key="memories.programmemory.end" value="0x7fff"/>
         <property key="memories.programmemory.partition2" value="true"/>
         <property key="memories.programmemory.partition2.end"
                   value="${memories.programmemory.partition2.end.value}"/>
