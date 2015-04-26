@@ -141,7 +141,7 @@ int main() {
     MODEM_ENABLE;
     
     while (1) {
-        handler_sinalizacao();
+        SINALIZA_NORMAL;
 
         //if ( global_timer.on1seg) { check_vbat(); }
         
@@ -163,6 +163,7 @@ int main() {
        // modem_async_parser(); //Ja analiza as mensagens assincronas
 
         
+         handler_sinalizacao();
 error:
         /* flags de tempo */
         global_timer.on1seg  = 0;

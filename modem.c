@@ -37,7 +37,7 @@ unsigned char state_gprs = 0;
 unsigned char indice_banda = 0;
 unsigned char tmp;
 unsigned char location_tmp;
-unsigned char str_tmp[150];
+unsigned char str_tmp[256];
 unsigned char *ptr;
 
 void undervoltage( void );
@@ -328,9 +328,8 @@ sapbr_error:
         /* Nao tem SIM CARD.*/
         SINALIZA_SIM_FAULT;
         state_gprs = 0;
-        RX_DATA_ACK; 
+        RX_DATA_ACK; //descarta o buffer
         return 0;
-        
     }
 
 gprs_error:
@@ -384,8 +383,9 @@ unsigned char modem_handler(void) {
 
             case 2:
                 if (modem_query_erbs() == SUCCESS) {
+                    state_gprs = 0;
                     state_main++;
-
+                    RX_DATA_ACK; /* Existe um bug mantendo o rc com um OK. Procurar.*/
                 }
                 break;
 
