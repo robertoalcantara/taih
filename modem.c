@@ -25,7 +25,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 3 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 20 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -355,29 +355,8 @@ gprs_error:
  *
  */
 unsigned char modem_handler(void) {
-    static unsigned char cnt_timeout;
-    static unsigned char cnt_status;
 
     power_modem( modem_power_status ); //maquina de estado de configuracao do modem
-
-    if (PWR_STAT_GetValue()==!modem_power_status) {
-        // Modem ainda em estado inconsistente
-        if ( global_timer.on1seg) { cnt_status++; }
-        if (cnt_status > 5) {
-
-            SINALIZA_MODEM_FAULT;
-            if ( global_timer.on1seg) { cnt_timeout++; }
-
-            if (cnt_timeout > 10) { state_modem=0; }
-
-            return 0;
-        } else {
-            cnt_status = 0;
-
-        }
-
-    }
-
 
     if ( 1 == modem_power_status ) {
         /* Sem o modem estar ligado nao faz sentido executar a maquina...*/
