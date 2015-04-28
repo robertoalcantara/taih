@@ -25,14 +25,14 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 2 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 3 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
 unsigned char state_main = 0;
 unsigned char state_band = 0;
-unsigned char state_gprs = 0;
+unsigned char state_enter_gprs = 0;
 
 unsigned char indice_banda = 0;
 unsigned char tmp;
@@ -77,6 +77,7 @@ int power_modem( char enable ) {
         case 2:
             MODEM_PWR_SetLow();
             state_modem++;
+            break;
     }
 
 }
@@ -137,7 +138,7 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 2:
-              _tx("ATE0\r\n", state_setup); //echo off
+              _tx("ATE1\r\n", state_setup); //echo off
               break;
 
         case 3:
@@ -208,12 +209,6 @@ def:
 
 unsigned char modem_query_band( void ) {
 
-    unsigned char idx;
-
-    if (indice_banda >= NUM_BANDS)  {
-        return SUCCESS;
-    }
-
     switch( state_band ) {
         case 0:
             sprintf( str_tmp, "AT+CBAND=%s\r\n", band_modes[indice_banda] );
@@ -228,9 +223,9 @@ unsigned char modem_query_band( void ) {
         case 3:
             _tx("AT+CENG?\r\n", state_band);
             break;
+ 
         case 4:
              _expect_keep_buffer("OK", 5, state_band, band_error);
-             idx = 0;
              /* o buffer eh importante na sequencia, mante-lo intocado*/
              break;
         case 5:
@@ -238,6 +233,11 @@ unsigned char modem_query_band( void ) {
             RX_DATA_ACK; /*Sinaiza que tratou o buffer*/
             indice_banda++;
             state_band = 0;
+
+            if (indice_banda == NUM_BANDS)  {
+                return SUCCESS;
+            }
+
             break;
     }
 
@@ -272,20 +272,29 @@ unsigned char modem_query_erbs ( void ) {
 
 
 unsigned char modem_enter_gprs( void ) {
-    switch (state_gprs) {
+
+    switch (state_enter_gprs) {
 
         case 0:
-            _tx("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n", state_gprs);
-            break;
-
+             _nonblock_wait_start( 10, state_enter_gprs ); //necessario??? provavel nao - remover
+             break;
         case 1:
-            _expect_keep_buffer("OK", 5, state_gprs, sapbr_error);
+            _nonblock_wait(state_enter_gprs);
             break;
 
-        /*case 4:
-            _tx("AT+SAPBR=3,1,\"APN\",\"zap.vivo.com.br\"\r\n", state_gprs);
+        case 2:
+            _tx("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n", state_enter_gprs);
+
             break;
-            
+
+        case 3:
+            _expect("OK", 5, state_enter_gprs, sa_error);
+            break;
+
+        case 4:
+            _tx("AT+SAPBR=3,1,\"APN\",\"zap.vivo.com.br\"\r\n", state_enter_gprs);
+            break;
+        /*
         case 5:
             _expect("OK", 5, state_gprs, gprs_error);
             break;
@@ -322,18 +331,19 @@ unsigned char modem_enter_gprs( void ) {
     return 0;
     
 
-sapbr_error:
+sa_error:
     //nao chegou o ok. Precisamos ver o que foi.
     if ( strstr(rx_data, "SIM not inserted") ) {
         /* Nao tem SIM CARD.*/
         SINALIZA_SIM_FAULT;
-        state_gprs = 0;
+        state_enter_gprs = 0;
         RX_DATA_ACK; //descarta o buffer
         return 0;
     }
 
 gprs_error:
-    state_gprs = 0;
+
+    state_enter_gprs = 0;
     RX_DATA_ACK; //descarta o buffer
     return 0;
 }
@@ -346,17 +356,26 @@ gprs_error:
  */
 unsigned char modem_handler(void) {
     static unsigned char cnt_timeout;
+    static unsigned char cnt_status;
 
-    if ( global_timer.on1seg){ power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
+    power_modem( modem_power_status ); //maquina de estado de configuracao do modem
 
     if (PWR_STAT_GetValue()==!modem_power_status) {
         // Modem ainda em estado inconsistente
-        SINALIZA_MODEM_FAULT;
-        if ( global_timer.on1seg) { cnt_timeout++; }
+        if ( global_timer.on1seg) { cnt_status++; }
+        if (cnt_status > 5) {
 
-        if (cnt_timeout > 10) { state_modem=0; }
+            SINALIZA_MODEM_FAULT;
+            if ( global_timer.on1seg) { cnt_timeout++; }
 
-        return 0;
+            if (cnt_timeout > 10) { state_modem=0; }
+
+            return 0;
+        } else {
+            cnt_status = 0;
+
+        }
+
     }
 
 
@@ -383,9 +402,8 @@ unsigned char modem_handler(void) {
 
             case 2:
                 if (modem_query_erbs() == SUCCESS) {
-                    state_gprs = 0;
+                    state_enter_gprs = 0;
                     state_main++;
-                    RX_DATA_ACK; /* Existe um bug mantendo o rc com um OK. Procurar.*/
                 }
                 break;
 
@@ -393,7 +411,10 @@ unsigned char modem_handler(void) {
                 if (modem_enter_gprs() == SUCCESS) {
                     state_main++;
                 }
+                break;
         }
+        //DEBUGif (global_timer.on1seg) printf("E: %d G: %d\n\r", state_main, state_gprs);
+
     }
 
     

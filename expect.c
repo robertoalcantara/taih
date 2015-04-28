@@ -20,7 +20,9 @@ unsigned expect( char* source, char* target, unsigned char timeout, char flag_ch
         timeout_count = timeout;
     }
     
-    if ( global_timer.on1seg ) { timeout_count --; }
+    if ( global_timer.on1seg ) { 
+        timeout_count --;
+    }
     if ( 0 == timeout_count ) {
         /* Not found */
         init_flag = 0;

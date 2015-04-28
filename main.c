@@ -145,12 +145,10 @@ int main() {
 
         //if ( global_timer.on1seg) { check_vbat(); }
         
-        if ( global_timer.on100ms ) {
-            /* Maquina do Modem rodando em compasso de 100ms */
-            if (0 == modem_handler() ) {
-                /* Modem nao esta como deveria*/
-                goto error;
-            }
+        /* Maquina do Modem rodando em compasso de 100ms */
+        if (0 == modem_handler() ) {
+            /* Modem nao esta como deveria*/
+            goto error;
         }
 
         
@@ -170,7 +168,7 @@ error:
         global_timer.on100ms = 0;
         global_timer.on10ms  = 0;
         global_timer.on1ms  = 0;
-        while (global_timer.on1ms == 0) { /* Fazer nada */ }
+        while (global_timer.on1ms == 0) { /* Fazer nada */}
 
     }
 
