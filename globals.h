@@ -54,7 +54,7 @@ struct t_global_timer {
 
 
 int x;
-#define RX_DATA_ACK rx_data_index = 0; rx_data_available = 0; rx_data[0]=0; for (x=0;x<RX_BUFFER_SIZE;x++) rx_data[x]=0;
+#define RX_DATA_ACK rx_data_index = 0; rx_data_available = 0; for (x=0;x<RX_BUFFER_SIZE;x++) rx_data[x]=0;
 
 extern unsigned long flash_pointer;
 

@@ -137,7 +137,8 @@ int main() {
 
     setup ();
     SINALIZA_NORMAL;
-    
+
+    MODEM_DISABLE;
     MODEM_ENABLE;
     
     while (1) {

@@ -25,7 +25,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 20 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 15 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -234,7 +234,7 @@ unsigned char modem_query_band( void ) {
             indice_banda++;
             state_band = 0;
 
-            if (indice_banda == NUM_BANDS)  {
+            if (indice_banda >= NUM_BANDS)  {
                 return SUCCESS;
             }
 
@@ -264,6 +264,7 @@ unsigned char modem_query_erbs ( void ) {
             flash_write_char('!');
             flash_commit();
             return SUCCESS;
+            
 
     }
     return 0;
@@ -276,15 +277,15 @@ unsigned char modem_enter_gprs( void ) {
     switch (state_enter_gprs) {
 
         case 0:
-             _nonblock_wait_start( 10, state_enter_gprs ); //necessario??? provavel nao - remover
-             break;
+            _tx("AT+CENG=0\r\n", state_enter_gprs);
+            break;
+
         case 1:
-            _nonblock_wait(state_enter_gprs);
+            _expect("OK", 5, state_enter_gprs, sa_error);
             break;
 
         case 2:
             _tx("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n", state_enter_gprs);
-
             break;
 
         case 3:
@@ -294,37 +295,37 @@ unsigned char modem_enter_gprs( void ) {
         case 4:
             _tx("AT+SAPBR=3,1,\"APN\",\"zap.vivo.com.br\"\r\n", state_enter_gprs);
             break;
-        /*
+        
         case 5:
-            _expect("OK", 5, state_gprs, gprs_error);
+            _expect("OK", 5, state_enter_gprs, gprs_error);
             break;
 
         case 6:
-            _tx("AT+SAPBR=3,1,\"USER\",\"vivo\"\r\n", state_gprs);
+            _tx("AT+SAPBR=3,1,\"USER\",\"vivo\"\r\n", state_enter_gprs);
             break;
 
         case 7:
-            _expect("OK", 5, state_gprs, gprs_error);
+            _expect("OK", 5, state_enter_gprs, gprs_error);
             break;
 
         case 8:
-            _tx("AT+SAPBR=3,1,\"PWD\",\"vivo\"\r\n", state_gprs);
+            _tx("AT+SAPBR=3,1,\"PWD\",\"vivo\"\r\n", state_enter_gprs);
             break;
 
         case 9:
-            _expect("OK", 5, state_gprs, gprs_error);
+            _expect("OK", 5, state_enter_gprs, gprs_error);
             break;
 
         case 10:
-            _tx("AT+SAPBR=1,1\r\n", state_gprs);
+            _tx("AT+SAPBR=1,1\r\n", state_enter_gprs);
             break;
 
         case 11:
-            _expect("OK", 5, state_gprs, gprs_error);
+            _expect("OK", 5, state_enter_gprs, gprs_error);
             break;
             
-        case 12:
-            return SUCCESS;*/
+        case 99:
+            return SUCCESS;
 
     }
 
@@ -332,6 +333,7 @@ unsigned char modem_enter_gprs( void ) {
     
 
 sa_error:
+ printf("ERROR2\r\n");
     //nao chegou o ok. Precisamos ver o que foi.
     if ( strstr(rx_data, "SIM not inserted") ) {
         /* Nao tem SIM CARD.*/
@@ -341,8 +343,9 @@ sa_error:
         return 0;
     }
 
-gprs_error:
 
+gprs_error:
+printf("ERROR\r\n");
     state_enter_gprs = 0;
     RX_DATA_ACK; //descarta o buffer
     return 0;
