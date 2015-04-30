@@ -12,7 +12,7 @@
 #define EXPECT_WAITING 1
 #define EXPECT_FOUND 2
 
-unsigned expect( char* source, char* target, unsigned char timeout, char flag_change );
+unsigned char expect( char* source, char* target, unsigned char timeout, char flag_change );
 
 #endif	/* EXPECT_H */
 

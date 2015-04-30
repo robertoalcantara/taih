@@ -25,7 +25,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 15 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 5 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -289,7 +289,7 @@ unsigned char modem_enter_gprs( void ) {
             break;
 
         case 3:
-            _expect("OK", 5, state_enter_gprs, sa_error);
+            _expect("OKz", 5, state_enter_gprs, sa_error);
             break;
 
         case 4:
