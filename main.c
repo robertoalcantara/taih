@@ -116,6 +116,13 @@ void serial_buffer_copy(void){
         if (aux == '\r') continue;
         rx_data[ rx_data_index ] = aux;
         rx_data_index++;
+        if (rx_data_index >= RX_BUFFER_SIZE) {
+            //assert! vai dar buffer overflow.
+            printf("\n\rASSERT Buffer Overflow serial_buffer_copy\r\n");
+            rx_data_index = 0;
+            return;
+        }
+
         if ( aux == '\n' ) {
             SINALIZA_MSG_ACK;
             rx_data_available = 1;
