@@ -50,7 +50,7 @@ struct t_global_timer {
       unsigned char aux_100ms;
       unsigned char aux_1s;
 
-} global_timer ;
+} volatile global_timer ;
 
 
 int x;
