@@ -16,7 +16,7 @@
 
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
-#define _expect(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++; RX_DATA_ACK; };
+#define _expect(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++; RX_DATA_ACK; } ;
 #define _expect_keep_buffer(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++;};
 
 #define _async_comp(A) strstr( (unsigned char*) rx_data, (const char*) A )
@@ -25,7 +25,7 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
-#define DELAY_ATCBAND 5 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 3 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -33,6 +33,8 @@ unsigned char state_location = 0;
 unsigned char state_main = 0;
 unsigned char state_band = 0;
 unsigned char state_enter_gprs = 0;
+unsigned char state_tx_http = 0;
+
 
 unsigned char indice_banda = 0;
 unsigned char tmp;
@@ -138,7 +140,7 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 2:
-              _tx("ATE1\r\n", state_setup); //echo off
+              _tx("ATE0\r\n", state_setup); //echo off
               break;
 
         case 3:
@@ -289,7 +291,14 @@ unsigned char modem_enter_gprs( void ) {
             break;
 
         case 3:
-            _expect("OKz", 5, state_enter_gprs, sa_error);
+          /*  if (global_timer.on100ms) {
+                printf("L: %d", timeout_count);
+            }
+            if (global_timer.on1seg) {
+                printf("!SEG!");
+            }*/
+           _expect("OKz", 5, state_enter_gprs, sa_error);
+ 
             break;
 
         case 4:
@@ -324,7 +333,7 @@ unsigned char modem_enter_gprs( void ) {
             _expect("OK", 5, state_enter_gprs, gprs_error);
             break;
             
-        case 99:
+        case 12:
             return SUCCESS;
 
     }
@@ -333,6 +342,7 @@ unsigned char modem_enter_gprs( void ) {
     
 
 sa_error:
+ EXPECT_ERROR;
  printf("ERROR2\r\n");
     //nao chegou o ok. Precisamos ver o que foi.
     if ( strstr(rx_data, "SIM not inserted") ) {
@@ -343,14 +353,81 @@ sa_error:
         return 0;
     }
 
-
 gprs_error:
-printf("ERROR\r\n");
+    EXPECT_ERROR;
+    printf("ERROR\r\n");
     state_enter_gprs = 0;
     RX_DATA_ACK; //descarta o buffer
     return 0;
 }
 
+
+
+unsigned char modem_tx_http( void ) {
+
+    switch (state_tx_http) {
+
+        case 0:
+            _tx("AT+HTTPINIT\r\n", state_enter_gprs);
+            break;
+
+        case 1:
+            _expect("OK", 5, state_enter_gprs, http_error);
+            break;
+
+        case 2:
+            _tx("AT+HTTPPARA=\"CID\",1\r\n", state_enter_gprs);
+            break;
+
+        case 3:
+            _expect("OK", 5, state_enter_gprs, http_error);
+            break;
+
+        case 4:
+            _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_enter_gprs);
+            break;
+
+        case 5:
+            _expect("OK", 5, state_enter_gprs, http_error);
+            break;
+
+        case 6:
+            _tx("AT+HTTPDATA=2,33\r\n", state_enter_gprs);
+            break;
+
+        case 7:
+            _expect("DOWNLOAD", 5, state_enter_gprs, http_error);
+            break;
+
+        case 8:
+            _tx("id=123456789012345678901234567890", state_enter_gprs);
+            break;
+
+        case 9:
+            _expect("OK", 5, state_enter_gprs, http_error);
+            break;
+
+        case 10:
+            _tx("AT+HTTPACTION=1\r\n", state_enter_gprs);
+            break;
+
+        case 11:
+            _expect("OK", 5, state_enter_gprs, http_error);
+            break;
+            
+        case 12:
+            return SUCCESS;
+
+    }
+
+    return 1;
+
+http_error:
+            printf("ERR HHHHHTTT");
+            return 0;
+
+
+}
 
 
 /* Maquina de estados do modem
@@ -394,13 +471,18 @@ unsigned char modem_handler(void) {
                     state_main++;
                 }
                 break;
+
+            case 99:
+                if (modem_tx_http()==SUCCESS) {
+                    state_main++;
+                }
         }
         //DEBUGif (global_timer.on1seg) printf("E: %d G: %d\n\r", state_main, state_gprs);
 
     }
 
     
-    return (1);
+    return 1;
 }
 
 

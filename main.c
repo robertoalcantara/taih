@@ -176,7 +176,7 @@ error:
         global_timer.on100ms = 0;
         global_timer.on10ms  = 0;
         global_timer.on1ms  = 0;
-        while (global_timer.on1ms == 0) { /* Fazer nada */}
+        while (global_timer.on1ms == 0) { /* Fazer nada */  }
 
     }
 
