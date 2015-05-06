@@ -16,28 +16,27 @@
 
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
-#define _expect(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++;} RX_DATA_ACK ;
-#define _expect_keep_buffer(A,B,D,C) tmp=expect( rx_data, (unsigned char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == tmp ) goto C; else if ( EXPECT_FOUND == tmp ) {D++;};
+#define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++; RX_DATA_ACK;};
+#define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
-#define _async_comp(A) strstr( (unsigned char*) rx_data, (const char*) A )
-#define _tx(A,B) printf ((unsigned char *) A); B++;
+#define _async_comp(A) strstr( (char*) rx_data, (const char*) A )
+#define _tx(A,B) printf ((char *) A); B++;
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
-#define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
 #define DELAY_ATCBAND 3 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
-unsigned char state_main = 0;
+unsigned char state_main = 99; // teste comecando fora
 unsigned char state_band = 0;
 unsigned char state_enter_gprs = 0;
 unsigned char state_tx_http = 0;
 
 
 unsigned char indice_banda = 0;
-unsigned char tmp;
+unsigned char exp;
 unsigned char location_tmp;
 unsigned char str_tmp[256];
 unsigned char *ptr;
@@ -60,7 +59,7 @@ int power_modem( char enable ) {
     if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
     if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
 
-    if ( enable == 0 ) {
+    if ( enable == 0 && PWR_STAT_GetValue()==1 ) { //esta ligado mas deveria ficar desligado
         printf("AT+CPOWD=1\r\n");
         return;
     }
@@ -121,6 +120,15 @@ void modem_async_parser(void)  {
         return;
     }
 
+    if ( _async_comp("+CME ERROR: operation not allowed") ) {
+       //Erro qdo nao consegue entrar na rede gprs
+     printf("\r\nErro ao gprs  async\r\n");
+        RX_DATA_ACK;
+        return;
+    }
+
+
+
 }
 
 void undervoltage(void) {
@@ -136,11 +144,11 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 1:
-            _expect("OK", 15, state_setup, setup_error);
+            _expect("OK", 5, state_setup, setup_error);
             break;
 
         case 2:
-              _tx("ATE1\r\n", state_setup); //echo off
+              _tx("ATE0\r\n", state_setup); //echo off
               break;
 
         case 3:
@@ -170,8 +178,10 @@ unsigned char modem_setup ( void ) {
     return 0;
 
 setup_error:
+    printf("\r\nErrrrrrrr\r\n");
     /* There's nothing to be done. Try again and again. We need a modem. */
     state_setup=0;
+    EXPECT_ERROR;
     RX_DATA_ACK; //descarta o buffer
     return 0;
 
@@ -247,6 +257,7 @@ unsigned char modem_query_band( void ) {
 
 band_error:
     state_band = 0;
+    EXPECT_ERROR;
     RX_DATA_ACK; //descarta o buffer
     return 0;
 
@@ -291,14 +302,7 @@ unsigned char modem_enter_gprs( void ) {
             break;
 
         case 3:
-            /*if (global_timer.on100ms) {
-                printf("\n\rL: %d", timeout_count);
-            }
-            if (global_timer.on1seg) {
-                printf("!SEG!");
-            }*/
            _expect("OK", 5, state_enter_gprs, sa_error);
- 
             break;
 
         case 4:
@@ -342,20 +346,15 @@ unsigned char modem_enter_gprs( void ) {
     
 
 sa_error:
- EXPECT_ERROR;
- printf("ERROR2\r\n");
     //nao chegou o ok. Precisamos ver o que foi.
     if ( strstr(rx_data, "SIM not inserted") ) {
-        /* Nao tem SIM CARD.*/
+        // Nao tem SIM CARD.
         SINALIZA_SIM_FAULT;
-        state_enter_gprs = 0;
-        RX_DATA_ACK; //descarta o buffer
-        return 0;
     }
 
 gprs_error:
     EXPECT_ERROR;
-    printf("ERROR\r\n");
+    printf("\r\nERR2 modem_enter_gprs\r\n");
     state_enter_gprs = 0;
     RX_DATA_ACK; //descarta o buffer
     return 0;
@@ -392,38 +391,56 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 6:
-            _tx("AT+HTTPDATA=40,20000\r\n", state_tx_http);
+            _tx("AT+HTTPPARA=\"CONTENT\",\"application/x-www-form-urlencoded\"\r\n", state_tx_http);
             break;
 
         case 7:
-            _expect("DOWNLOAD", 5, state_tx_http, http_error);
+            _expect("OK", 5, state_tx_http, http_error);
             break;
 
         case 8:
-            _tx("id=1,data=123456789012345678901234567890", state_tx_http);
+            _tx("AT+HTTPDATA=40,20000\r\n", state_tx_http);
             break;
 
         case 9:
-            _expect("OK", 5, state_tx_http, http_error);
+            _expect("DOWNLOAD", 5, state_tx_http, http_error);
             break;
 
         case 10:
-            _tx("AT+HTTPACTION=1\r\n", state_tx_http);
+            _tx("id=1&data=123456789012345678901234567890", state_tx_http);
             break;
 
         case 11:
-            _expect("+HTTPACTION", 5, state_tx_http, http_error);
-            break;
-        
-        case 12:
-            _tx("AT+CGATT=0\r\n", state_tx_http); //detach da rede
-            break;
-        
-        case 13:
             _expect("OK", 5, state_tx_http, http_error);
             break;
 
+        case 12:
+            _tx("AT+HTTPACTION=1\r\n", state_tx_http);
+            break;
+
+        case 13:
+            _expect("+HTTPACTION", 5, state_tx_http, http_error);
+            break;
+
         case 14:
+            _tx("AT+HTTPTERM\r\n", state_tx_http); //detach da rede
+            break;
+
+        case 15:
+            _expect("OK", 5, state_tx_http, http_error);
+            break;
+
+
+        case 16:
+            _tx("AT+CGATT=0\r\n", state_tx_http); //detach da rede
+            break;
+        
+        case 17:
+            _expect("OK", 5, state_tx_http, http_error);
+            break;
+
+        case 18:
+            printf("\r\nFIM SUCC\r\n");
             return SUCCESS;
 
     }
@@ -431,10 +448,10 @@ unsigned char modem_tx_http( void ) {
     return 1;
 
 http_error:
+    printf("n\r ERR http_error \n\r");
     EXPECT_ERROR;
     RX_DATA_ACK;
-
-    printf("ERR HHHHHTTT");
+    state_tx_http = 0;
     return 0;
 
 
@@ -446,10 +463,21 @@ http_error:
  *
  */
 unsigned char modem_handler(void) {
+    static unsigned long modem_global_timeout = 0;
 
-    power_modem( modem_power_status ); //maquina de estado de configuracao do modem
+    if (PWR_STAT_GetValue() != modem_power_status) { return 0; } //FAULT
+    
+    if ( modem_power_status ) {
 
-    if ( PWR_STAT_GetValue() == modem_power_status ) {
+
+       /* if (global_timer.on1seg) modem_global_timeout++;
+        if (modem_global_timeout >= 300) {
+            modem_global_timeout = 0;
+            state_main = 0;
+            printf("\r\nGLB TIMEOUT\r\n");
+        }*/
+
+
         /* Sem o modem estar ligado nao faz sentido executar a maquina...*/
         switch(state_main) {
 
@@ -465,6 +493,10 @@ unsigned char modem_handler(void) {
                     state_main++;
                     state_location = 0; /* Zera a maq de estado de query de redes */
                     state_band = 0; /* Zera a maq de estado da sequencia das bandas */
+
+                    state_main = 3;
+                    state_enter_gprs = 0;
+
                 }
                 break;
 
@@ -486,13 +518,15 @@ unsigned char modem_handler(void) {
                 if (modem_tx_http()==SUCCESS) {
                     state_main++;
                 }
+                
+            case 5:
+                state_main++;
+                return SUCCESS;
         }
         //DEBUGif (global_timer.on1seg) printf("E: %d G: %d\n\r", state_main, state_gprs);
 
-    } else {
-        return 0;
     }
-
+    
     
     return 1;
 }

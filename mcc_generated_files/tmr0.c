@@ -140,17 +140,17 @@ void TMR0_ISR(void)
     global_timer.on1ms = 1;
     global_timer.aux_10ms++;
 
-    if (global_timer.aux_10ms == 10) {
+    if (global_timer.aux_10ms >= 10) {
         global_timer.aux_10ms = 0;
         global_timer.on10ms = 1;
         global_timer.aux_100ms++;
 
-        if (global_timer.aux_100ms == 10 ) {
+        if (global_timer.aux_100ms >= 10 ) {
             global_timer.aux_100ms = 0;
             global_timer.on100ms = 1;
             global_timer.aux_1s++;
         }
-        if (global_timer.aux_1s == 10 ) {
+        if (global_timer.aux_1s >= 10 ) {
             global_timer.aux_1s = 0;
             global_timer.on1seg = 1;
         }

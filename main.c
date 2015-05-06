@@ -15,6 +15,7 @@
 #include "globals.h"
 #include "modem.h"
 
+volatile T_GLOBAL_TIMER global_timer;
 
 
 unsigned char rx_data_available = 0;
@@ -41,6 +42,10 @@ void setup (void) {
     VBAT_CONTROL_SetLow();
     LED_D6_SetHigh(); // Ligando
 
+    global_timer.aux_100ms = 0;
+    global_timer.aux_10ms = 0;
+    global_timer.aux_1s = 0;
+
 }
 
 
@@ -66,14 +71,15 @@ void handler_sinalizacao(void) {
 
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
-            if ( 2 == cnt_live ) {
+            if ( global_timer.on1seg ) { LED_D6_Toggle(); LED_D7_SetLow(); }
+            /*if ( 2 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
                 if (global_timer.on100ms) {
                     LED_D6_SetLow();
                 }
-            }
+            }*/
             break;
 
         case SINALIZACAO_MODEM_FAULT:
@@ -101,6 +107,7 @@ void handler_sinalizacao(void) {
             }
             break;
             
+            
     }
 }
 
@@ -108,7 +115,7 @@ void handler_sinalizacao(void) {
 void serial_buffer_copy(void){
     char aux;
 
-    if (rx_data_available) { /* Buffer overrun! Vai perder o dado. */ }
+    if (rx_data_available) { /* Buffer overrun! */ }
 
     while ( eusart1RxCount > 0  ) {
         aux = EUSART1_Read();
@@ -116,13 +123,15 @@ void serial_buffer_copy(void){
         if (aux == '\r') continue;
         rx_data[ rx_data_index ] = aux;
         rx_data_index++;
-        rx_data[ rx_data_index ] = 0; //garantindo sempre...
         if (rx_data_index >= RX_BUFFER_SIZE) {
             //assert! vai dar buffer overflow.
-            printf("\n\rASSERT Buffer Overflow serial_buffer_copy\r\n");
+            printf("\r\nASSERT Buffer Overflow serial_buffer_copy\r\n");
             rx_data_index = 0;
+            rx_data[0] = 0;
             return;
         }
+
+        rx_data[ rx_data_index ] = 0; //garantindo sempre...
 
         if ( aux == '\n' ) {
             SINALIZA_MSG_ACK;
@@ -142,34 +151,50 @@ void serial_buffer_copy(void){
 int main() {
     long x, y;
     char cnt = 0;
+    char ret = 0;
+    unsigned long cnt_tempo_transmissao = 0;
 
     setup ();
-    SINALIZA_NORMAL;
 
-    MODEM_ENABLE;
-    
+    MODEM_DISABLE;
+
+
+
     while (1) {
         SINALIZA_NORMAL;
+
+        if ( global_timer.on1seg ) { cnt_tempo_transmissao++; }
+        if ( global_timer.on1seg ) { power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
 
         //if ( global_timer.on1seg) { check_vbat(); }
 
 
-        /* Verifica se existe dado na serial para processar */
-        if ( eusart1RxCount > 0 ) {
-            serial_buffer_copy();
-        }
-       // modem_async_parser(); //Ja analiza as mensagens assincronas
+        // Verifica se existe dado na serial para processar
+        serial_buffer_copy();
 
-        
-        /* Maquina do Modem rodando em compasso de 100ms */
-        if (0 == modem_handler() ) {
-            /* Modem nao esta como deveria*/
+
+       modem_async_parser(); //Ja analiza as mensagens assincronas
+
+       ret = modem_handler();
+ 
+        // Maquina do Modem rodando
+        if ( cnt_tempo_transmissao == 15 ) { //em segundos
+            MODEM_ENABLE;
+            state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
+        }
+        if (0 == ret ) {
+            // Modem nao esta como deveria
             SINALIZA_MODEM_FAULT;
             goto error;
+        } else {
+            if ( SUCCESS == ret ) {
+                //tudo certo
+                MODEM_DISABLE;
+                cnt_tempo_transmissao = 0;
+            }
         }
 
-        
-        
+
 
 error:
 

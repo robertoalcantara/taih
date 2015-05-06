@@ -8,14 +8,20 @@
 #ifndef MODEM_H
 #define	MODEM_H
 
-#define MODEM_ENABLE modem_power_status = 1;
-#define MODEM_DISABLE modem_power_status = 0;
+#define MODEM_ENABLE modem_power_status = 1; 
+#define MODEM_DISABLE modem_power_status = 0; state_modem = 0;
 
-unsigned char modem_setup();
+extern unsigned char modem_setup();
+extern unsigned char state_modem;
 
-void modem_async_parser();
+extern unsigned char state_main; //maquina de estados principal
 
-unsigned char modem_handler();
+extern void modem_async_parser();
+
+extern unsigned char modem_handler();
+
+
+extern int power_modem( char enable );
 
 
 #endif	/* MODEM_H */
