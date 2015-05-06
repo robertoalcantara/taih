@@ -91,7 +91,7 @@ void handler_sinalizacao(void) {
             return; /* Afeta o D7 */
     }
 
-    //essa sinalizaco eh temporaria
+    //essa sinalizaco eh do tipo temporaria
     switch (sinalizacao_status & 0xF0) {
         case SINALIZACAO_MSG_ACK:
             LED_D7_SetHigh();
@@ -116,6 +116,7 @@ void serial_buffer_copy(void){
         if (aux == '\r') continue;
         rx_data[ rx_data_index ] = aux;
         rx_data_index++;
+        rx_data[ rx_data_index ] = 0; //garantindo sempre...
         if (rx_data_index >= RX_BUFFER_SIZE) {
             //assert! vai dar buffer overflow.
             printf("\n\rASSERT Buffer Overflow serial_buffer_copy\r\n");
@@ -139,28 +140,19 @@ void serial_buffer_copy(void){
  * 
  */
 int main() {
-
+    long x, y;
     char cnt = 0;
 
     setup ();
     SINALIZA_NORMAL;
 
-    MODEM_DISABLE;
     MODEM_ENABLE;
     
     while (1) {
         SINALIZA_NORMAL;
 
         //if ( global_timer.on1seg) { check_vbat(); }
-        
-        /* Maquina do Modem rodando em compasso de 100ms */
-        if (0 == modem_handler() ) {
-            /* Modem nao esta como deveria*/
-            goto error;
-        }
 
-        
-        
 
         /* Verifica se existe dado na serial para processar */
         if ( eusart1RxCount > 0 ) {
@@ -169,13 +161,26 @@ int main() {
        // modem_async_parser(); //Ja analiza as mensagens assincronas
 
         
-         handler_sinalizacao();
+        /* Maquina do Modem rodando em compasso de 100ms */
+        if (0 == modem_handler() ) {
+            /* Modem nao esta como deveria*/
+            SINALIZA_MODEM_FAULT;
+            goto error;
+        }
+
+        
+        
+
 error:
+
+        handler_sinalizacao();
+
         /* flags de tempo */
         global_timer.on1seg  = 0;
         global_timer.on100ms = 0;
         global_timer.on10ms  = 0;
         global_timer.on1ms  = 0;
+
         while (global_timer.on1ms == 0) { /* Fazer nada */  }
 
     }
