@@ -154,6 +154,34 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #define PWR_STAT_ResetPullup()   do { WPUB5 = 0; } while(0)
 #define PWR_STAT_SetAnalogMode()   do { ANSB5 = 1; } while(0)
 #define PWR_STAT_SetDigitalMode()   do { ANSB5 = 0; } while(0)
+// get/set TX2 aliases
+#define TX2_TRIS               TRISB6
+#define TX2_LAT                LATB6
+#define TX2_PORT               PORTBbits.RB6
+#define TX2_WPU                WPUB6
+#define TX2_SetHigh()    do { LATB6 = 1; } while(0)
+#define TX2_SetLow()   do { LATB6 = 0; } while(0)
+#define TX2_Toggle()   do { LATB6 = ~LATB6; } while(0)
+#define TX2_GetValue()         PORTBbits.RB6
+#define TX2_SetDigitalInput()    do { TRISB6 = 1; } while(0)
+#define TX2_SetDigitalOutput()   do { TRISB6 = 0; } while(0)
+
+#define TX2_SetPullup()    do { WPUB6 = 1; } while(0)
+#define TX2_ResetPullup()   do { WPUB6 = 0; } while(0)
+// get/set RX2 aliases
+#define RX2_TRIS               TRISB7
+#define RX2_LAT                LATB7
+#define RX2_PORT               PORTBbits.RB7
+#define RX2_WPU                WPUB7
+#define RX2_SetHigh()    do { LATB7 = 1; } while(0)
+#define RX2_SetLow()   do { LATB7 = 0; } while(0)
+#define RX2_Toggle()   do { LATB7 = ~LATB7; } while(0)
+#define RX2_GetValue()         PORTBbits.RB7
+#define RX2_SetDigitalInput()    do { TRISB7 = 1; } while(0)
+#define RX2_SetDigitalOutput()   do { TRISB7 = 0; } while(0)
+
+#define RX2_SetPullup()    do { WPUB7 = 1; } while(0)
+#define RX2_ResetPullup()   do { WPUB7 = 0; } while(0)
 // get/set MODEM_PWR aliases
 #define MODEM_PWR_TRIS               TRISC0
 #define MODEM_PWR_LAT                LATC0

@@ -63,6 +63,7 @@ int x;
 extern unsigned long flash_pointer;
 
 
+extern void printD(const char* str);
 
 #endif	/* GLOBALS_H */
 

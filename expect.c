@@ -16,7 +16,6 @@ unsigned char init_flag = 0;
 
 unsigned char expect( char* source, char* target, unsigned char timeout, char flag_change   ) {
 
-
     if ( 0 == init_flag ) {
         init_flag = 1; /* blocking timeout count value*/
         timeout_count = timeout;

@@ -28,6 +28,18 @@ unsigned char modem_power_status = 0;
 
 unsigned char sinalizacao_status = 0;
 
+
+
+void printD(const char* str) {
+    while (*str) {
+        EUSART2_Write(*str);
+        str++;
+    }
+    EUSART2_Write('\r');
+    EUSART2_Write('\n');
+}
+
+
 /*
  *
  */
@@ -45,6 +57,8 @@ void setup (void) {
     global_timer.aux_100ms = 0;
     global_timer.aux_10ms = 0;
     global_timer.aux_1s = 0;
+
+    printD("Serial DEBUG");
 
 }
 
@@ -125,7 +139,7 @@ void serial_buffer_copy(void){
         rx_data_index++;
         if (rx_data_index >= RX_BUFFER_SIZE) {
             //assert! vai dar buffer overflow.
-            printf("\r\nASSERT Buffer Overflow serial_buffer_copy\r\n");
+            printD("\r\nASSERT Buffer Overflow serial_buffer_copy\r\n");
             rx_data_index = 0;
             rx_data[0] = 0;
             return;
@@ -136,6 +150,9 @@ void serial_buffer_copy(void){
         if ( aux == '\n' ) {
             SINALIZA_MSG_ACK;
             rx_data_available = 1;
+            //printD("serial_buffer_copy - rx_data_available = 1");
+            //printD(rx_data);
+
             break;
         }
 
@@ -152,7 +169,7 @@ int main() {
     long x, y;
     char cnt = 0;
     char ret = 0;
-    unsigned long cnt_tempo_transmissao = 0;
+    unsigned long cnt_tempo_transmissao = 600; //comecar mandando pra testar
 
     setup ();
 
@@ -178,12 +195,15 @@ int main() {
        ret = modem_handler();
  
         // Maquina do Modem rodando
-        if ( cnt_tempo_transmissao == 15 ) { //em segundos
+        if ( cnt_tempo_transmissao == 600 ) { //em segundos
             MODEM_ENABLE;
             state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
+            if ( global_timer.on1seg ) {printD("main - cnt_tempo_transmissao == 15");}
         }
+       
         if (0 == ret ) {
             // Modem nao esta como deveria
+            if ( global_timer.on1seg ) {printD("main - Modem Fault"); };
             SINALIZA_MODEM_FAULT;
             goto error;
         } else {
@@ -191,6 +211,7 @@ int main() {
                 //tudo certo
                 MODEM_DISABLE;
                 cnt_tempo_transmissao = 0;
+                if ( global_timer.on1seg ) { printD("main - SUCESSO - desligando modem"); }
             }
         }
 

@@ -16,15 +16,15 @@
 
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
-#define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++; RX_DATA_ACK;};
+#define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
 #define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
 #define _async_comp(A) strstr( (char*) rx_data, (const char*) A )
-#define _tx(A,B) printf ((char *) A); B++;
+#define _tx(A,B) printf ((char *) A); B++; printD(A); RX_DATA_ACK;
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
-#define DELAY_ATCBAND 3 /* delay em s apos um cband - 15 recomendando producao*/
+#define DELAY_ATCBAND 20 /* delay em s apos um cband - 15 recomendando producao*/
 
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -40,6 +40,8 @@ unsigned char exp;
 unsigned char location_tmp;
 unsigned char str_tmp[256];
 unsigned char *ptr;
+
+unsigned long http_pack_len = 0;
 
 void undervoltage( void );
 void modem_async_parser( void );
@@ -115,6 +117,8 @@ void modem_async_parser(void)  {
         return;
     }
     if ( _async_comp("VOLTAGE POWER DOWN") ) {
+            printD("assync parser: desligando modem");
+
        //enviado pelo modem qdo comandamos o shutdown
         RX_DATA_ACK;
         return;
@@ -122,7 +126,7 @@ void modem_async_parser(void)  {
 
     if ( _async_comp("+CME ERROR: operation not allowed") ) {
        //Erro qdo nao consegue entrar na rede gprs
-     printf("\r\nErro ao gprs  async\r\n");
+        printD("\r\nErro ao gprs  async  CME Error\r\n");
         RX_DATA_ACK;
         return;
     }
@@ -172,13 +176,16 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 8:
-            return SUCCESS; /* END */
+           state_setup++;
+           printD("modem_setup: SUCCESS");
+           return SUCCESS; /* END */
 
     }
     return 0;
 
 setup_error:
-    printf("\r\nErrrrrrrr\r\n");
+    printD("modem_setup: setup_ERROR");
+
     /* There's nothing to be done. Try again and again. We need a modem. */
     state_setup=0;
     EXPECT_ERROR;
@@ -214,6 +221,7 @@ void fmt_ceng_flash(char* origem) {
 def:
                     default:
                         flash_write_char(ch);
+                        http_pack_len++;
                 }
     }
     
@@ -268,17 +276,20 @@ unsigned char modem_query_erbs ( void ) {
     switch (state_location) {
 
         case 0:
+            state_band = 0;
+            state_location++;
+
+        case 1:
             if (modem_query_band()==SUCCESS) {
               state_location++;
             }
             break;
 
-        case 1:
+        case 2:
             flash_write_char('!');
             flash_commit();
             return SUCCESS;
             
-
     }
     return 0;
 
@@ -338,6 +349,8 @@ unsigned char modem_enter_gprs( void ) {
             break;
             
         case 12:
+            state_enter_gprs++;
+            printD("modem_enter_gprs: SUCCESS");
             return SUCCESS;
 
     }
@@ -346,6 +359,7 @@ unsigned char modem_enter_gprs( void ) {
     
 
 sa_error:
+    printD("modem_enter_gprs: SA_ERROR");
     //nao chegou o ok. Precisamos ver o que foi.
     if ( strstr(rx_data, "SIM not inserted") ) {
         // Nao tem SIM CARD.
@@ -353,6 +367,8 @@ sa_error:
     }
 
 gprs_error:
+   printD("modem_enter_gprs: GPRS_ERROR");
+
     EXPECT_ERROR;
     printf("\r\nERR2 modem_enter_gprs\r\n");
     state_enter_gprs = 0;
@@ -363,10 +379,14 @@ gprs_error:
 
 
 unsigned char modem_tx_http( void ) {
+    unsigned long count = 0;
+    uint32_t flashAdd;
+    unsigned char ch;
 
     switch (state_tx_http) {
 
         case 0:
+            flashAdd = BASE_ADDR; //endereco inicial na flash para ler
             _tx("AT+HTTPINIT\r\n", state_tx_http);
             break;
 
@@ -383,7 +403,9 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 4:
-            _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_tx_http);
+            //_tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_tx_http);
+                        _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44:2000\"\r\n", state_tx_http);
+
             break;
 
         case 5:
@@ -398,8 +420,11 @@ unsigned char modem_tx_http( void ) {
             _expect("OK", 5, state_tx_http, http_error);
             break;
 
-        case 8:
-            _tx("AT+HTTPDATA=40,20000\r\n", state_tx_http);
+        case 8: //mesmo que o _tx mas com parametro no printf...
+            http_pack_len = http_pack_len + 10; //id=1&data=
+            printf("AT+HTTPDATA=%d,20000\r\n", http_pack_len);
+            state_tx_http++;
+            RX_DATA_ACK;
             break;
 
         case 9:
@@ -407,7 +432,12 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=1&data=123456789012345678901234567890", state_tx_http);
+            _tx("id=1&data=", state_tx_http);
+            for (count=0; count<http_pack_len; count++) {
+                ch = (unsigned char)FLASH_ReadByte(flashAdd);
+                flashAdd++;
+                EUSART2_Write(ch);
+            }
             break;
 
         case 11:
@@ -440,7 +470,8 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 18:
-            printf("\r\nFIM SUCC\r\n");
+            state_tx_http++;
+            printD("\r\nFIM SUCC\r\n");
             return SUCCESS;
 
     }
@@ -448,7 +479,7 @@ unsigned char modem_tx_http( void ) {
     return 1;
 
 http_error:
-    printf("n\r ERR http_error \n\r");
+    printD("n\r ERR http_error \n\r");
     EXPECT_ERROR;
     RX_DATA_ACK;
     state_tx_http = 0;
@@ -470,12 +501,13 @@ unsigned char modem_handler(void) {
     if ( modem_power_status ) {
 
 
-       /* if (global_timer.on1seg) modem_global_timeout++;
-        if (modem_global_timeout >= 300) {
+        if (global_timer.on1seg) modem_global_timeout++;
+        if (modem_global_timeout >= 220) {
             modem_global_timeout = 0;
             state_main = 0;
+            MODEM_DISABLE;
             printf("\r\nGLB TIMEOUT\r\n");
-        }*/
+        }
 
 
         /* Sem o modem estar ligado nao faz sentido executar a maquina...*/
@@ -483,19 +515,23 @@ unsigned char modem_handler(void) {
 
             case 0:
                 /* Zerar  a maquina de configuracao do modem */
+                
                 state_setup = 0;
                 state_main++;
+                http_pack_len = 0; //tamanho do payload
+                printD("indo p/ state_main: 1");
                 break;
 
             case 1:
                 /* Esperar a maquina de config do modem encerrar */
+                
+
                 if (modem_setup() == SUCCESS) {
                     state_main++;
                     state_location = 0; /* Zera a maq de estado de query de redes */
                     state_band = 0; /* Zera a maq de estado da sequencia das bandas */
-
-                    state_main = 3;
                     state_enter_gprs = 0;
+                    printD("indo p/ state_main: 2");
 
                 }
                 break;
@@ -504,26 +540,33 @@ unsigned char modem_handler(void) {
                 if (modem_query_erbs() == SUCCESS) {
                     state_enter_gprs = 0;
                     state_main++;
+                    printD("indo p/ state_main: 3");
                 }
                 break;
 
             case 3:
+
                 if (modem_enter_gprs() == SUCCESS) {
                     state_main++;
                     state_tx_http = 0;
+                    printD("indo p/ state_main: 4");
                 }
                 break;
 
             case 4:
                 if (modem_tx_http()==SUCCESS) {
                     state_main++;
+                    printD("indo p/ state_main: 5");
                 }
+                break;
                 
             case 5:
+                printD("state_main: 5");
+                printD("MAIN SCUCESS");
                 state_main++;
                 return SUCCESS;
         }
-        //DEBUGif (global_timer.on1seg) printf("E: %d G: %d\n\r", state_main, state_gprs);
+        //if (global_timer.on1seg) printD("E: %d G: %d\n\r", state_main, state_gprs);
 
     }
     

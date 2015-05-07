@@ -8,6 +8,8 @@
 #ifndef FLASH_IO_H
 #define	FLASH_IO_H
 
+#define BASE_ADDR 0x3000
+#define BLOCK_SIZE ERASE_FLASH_BLOCKSIZE
 
 
 extern void flash_write_char(unsigned char ch);

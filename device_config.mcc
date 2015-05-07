@@ -11,11 +11,13 @@
             <resource customName="LED_D7" digital="true" direction="OUTPUT" function="RA7" module="GPIO" name="RA7" start="false" type="pin" wpu="false"/>
             <resource customName="BTN" digital="true" direction="INPUT" function="RB0" module="GPIO" name="RB0" start="false" type="pin" wpu="false"/>
             <resource customName="PWR_STAT" digital="true" direction="INPUT" function="RB5" module="GPIO" name="RB5" start="false" type="pin" wpu="false"/>
+            <resource customName="TX2" digital="true" direction="INPUT" function="TX2" module="EUSART2" name="RB6" start="false" type="pin" wpu="false"/>
+            <resource customName="RX2" digital="true" direction="INPUT" function="RX2" module="EUSART2" name="RB7" start="false" type="pin" wpu="false"/>
             <resource customName="MODEM_PWR" digital="true" direction="OUTPUT" function="RC0" module="GPIO" name="RC0" start="false" type="pin" wpu="false"/>
             <resource customName="TX1" digital="true" direction="INPUT" function="TX1" module="EUSART1" name="RC6" start="false" type="pin" wpu="false"/>
             <resource customName="RX1" digital="true" direction="INPUT" function="RX1" module="EUSART1" name="RC7" start="false" type="pin" wpu="false"/>
             <file checksum="3228468539" modified="false" name="pin_manager.c" path="mcc_generated_files/pin_manager.c"/>
-            <file checksum="4285248913" modified="false" name="pin_manager.h" path="mcc_generated_files/pin_manager.h"/>
+            <file checksum="2812938840" modified="false" name="pin_manager.h" path="mcc_generated_files/pin_manager.h"/>
         </manager>
         <manager generated="true" name="Interrupt Manager" reloadPin="manual">
             <setting name="preemptHigh" option="false"/>
@@ -81,8 +83,8 @@
             <setting name="EBTR0" option="OFF"/>
             <setting name="EBTRB" option="OFF"/>
             <setting name="generateConfigBits" option="true"/>
-            <file checksum="2665823090" modified="false" name="mcc.c" path="mcc_generated_files/mcc.c"/>
-            <file checksum="4291502357" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
+            <file checksum="2537833215" modified="false" name="mcc.c" path="mcc_generated_files/mcc.c"/>
+            <file checksum="2441357286" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
         </manager>
     </managers>
     <modules>
@@ -177,6 +179,45 @@
             <setting name="useEE" option="true"/>
             <file checksum="1135174820" modified="false" name="memory.c" path="mcc_generated_files/memory.c"/>
             <file checksum="56696237" modified="false" name="memory.h" path="mcc_generated_files/memory.h"/>
+        </module>
+        <module generated="true" mode="EUSART Asynchronous(NRZ)" name="EUSART2" order="5" reloadPin="manual" type="uart_enh">
+            <initializer comment="" name="Initialize">
+                <setting name="WUE" option="disabled" register="BAUD2CON"/>
+                <setting name="ABDEN" option="disabled" register="BAUD2CON"/>
+                <setting name="ABDOVF" option="no_overflow" register="BAUD2CON"/>
+                <setting name="RCIDL" option="idle" register="BAUD2CON"/>
+                <setting name="CKTXP" option="async_noninverted_sync_fallingedge" register="BAUD2CON"/>
+                <setting name="BRG16" option="16bit_generator" register="BAUD2CON"/>
+                <setting name="DTRXP" option="not_inverted" register="BAUD2CON"/>
+                <setting name="ADDEN" option="disabled" register="RC2STA"/>
+                <setting name="RX9" option="8-bit" register="RC2STA"/>
+                <setting name="RX9D" option="0x0" register="RC2STA"/>
+                <setting name="CREN" option="disabled" register="RC2STA"/>
+                <setting name="FERR" option="no_error" register="RC2STA"/>
+                <setting name="SPEN" option="enabled" register="RC2STA"/>
+                <setting name="SREN" option="disabled" register="RC2STA"/>
+                <setting name="OERR" option="no_error" register="RC2STA"/>
+                <setting name="CSRC" option="slave_mode" register="TX2STA"/>
+                <setting name="TRMT" option="TSR_empty" register="TX2STA"/>
+                <setting name="TXEN" option="enabled" register="TX2STA"/>
+                <setting name="BRGH" option="hi_speed" register="TX2STA"/>
+                <setting name="SYNC" option="asynchronous" register="TX2STA"/>
+                <setting name="SENDB" option="sync_break_complete" register="TX2STA"/>
+                <setting name="TX9D" option="0x0" register="TX2STA"/>
+                <setting name="TX9" option="8-bit" register="TX2STA"/>
+                <setting name="SPBRGL" option="51" register="SPBRG2"/>
+                <setting name="SPBRGH" option="0" register="SPBRGH2"/>
+                <setting name="TXREG" option="0" register="TXREG2"/>
+                <setting name="RCREG" option="0" register="RCREG2"/>
+                <additionalSetting name="baudrateString" option="9600"/>
+            </initializer>
+            <setting name="RCI" option="false"/>
+            <setting name="TXI" option="false"/>
+            <setting name="inputBuffer" option="8"/>
+            <setting name="outputBuffer" option="8"/>
+            <setting name="stdio" option="false"/>
+            <file checksum="795254176" modified="false" name="eusart2.c" path="mcc_generated_files/eusart2.c"/>
+            <file checksum="2100514027" modified="false" name="eusart2.h" path="mcc_generated_files/eusart2.h"/>
         </module>
     </modules>
 </configuration>

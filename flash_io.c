@@ -8,12 +8,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "mcc_generated_files/memory.h"
+#include "flash_io.h"
 
 /*
  * 
  */
-#define BASE_ADDR 0x3000
-#define BLOCK_SIZE ERASE_FLASH_BLOCKSIZE
 
 uint32_t   flashAddr = BASE_ADDR;  //ponteiro para endereco
 uint8_t    flashBuf[BLOCK_SIZE];
