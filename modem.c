@@ -19,7 +19,8 @@
 #define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
 #define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
-#define _async_comp(A) strstr( (char*) rx_data, (const char*) A )
+#define _async_comp(A) strstr( rx_data, A )
+
 #define _tx(A,B) printf ((char *) A); B++; printD(A); RX_DATA_ACK;
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
@@ -90,7 +91,7 @@ int power_modem( char enable ) {
 
 
 void modem_async_parser(void)  {
-
+    
     if ( _async_comp("UNDER-VOLTAGE WARNING") ) {
         printD("assync parser: Undervoltage!");
         undervoltage();
@@ -452,7 +453,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=1&data=", state_tx_http);
+            _tx("id=3&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
@@ -521,22 +522,23 @@ unsigned char modem_handler(void) {
     
     if ( modem_power_status ) {
 
+          /* Modem Ligado... */
 
-        if (global_timer.on1seg) modem_global_timeout++;
-        if (modem_global_timeout >= 220) {
-            modem_global_timeout = 0;
-            state_main = 0;
-            MODEM_DISABLE;
-            printf("\r\nGLB TIMEOUT\r\n");
+        if (global_timer.on1seg) {
+            modem_global_timeout++;
+
+            if (modem_global_timeout >= 220) {
+                modem_global_timeout = 0;
+                state_main = 0;
+                MODEM_DISABLE;
+                printf("\r\nGLB TIMEOUT\r\n");
+            }
         }
 
-
-        /* Sem o modem estar ligado nao faz sentido executar a maquina...*/
         switch(state_main) {
 
             case 0:
                 /* Zerar  a maquina de configuracao do modem */
-                
                 state_setup = 0;
                 state_main++;
                 http_pack_len = 0; //tamanho do payload
@@ -545,8 +547,6 @@ unsigned char modem_handler(void) {
 
             case 1:
                 /* Esperar a maquina de config do modem encerrar */
-                
-
                 if (modem_setup() == SUCCESS) {
                     state_main++;
                     state_location = 0; /* Zera a maq de estado de query de redes */

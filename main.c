@@ -74,8 +74,8 @@ void check_vbat(void){
     ADC_Initialize();
     vbat = ADC_GetConversion(channel_AN4);
 
-    sprintf(tmp,"B:%lu", vbat);
-    printD(tmp);
+    //sprintf(tmp,"B:%lu", vbat);
+    //printD(tmp);
 }
 
 
@@ -155,9 +155,6 @@ void serial_buffer_copy(void){
         if ( aux == '\n' ) {
             SINALIZA_MSG_ACK;
             rx_data_available = 1;
-            //printD("serial_buffer_copy - rx_data_available = 1");
-            //printD(rx_data);
-
             break;
         }
 
@@ -184,14 +181,18 @@ int main() {
     while (1) {
         SINALIZA_NORMAL;
 
-        if ( global_timer.on1seg ) { cnt_tempo_transmissao++; }
-        if ( global_timer.on1seg ) { power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
-        if ( global_timer.on1seg) { check_vbat(); }
+        if ( global_timer.on1seg ) {
+            cnt_tempo_transmissao++; 
+            power_modem( modem_power_status );  //maquina de estado de configuracao do modem
+            check_vbat();
+        }
 
+    
         // Verifica se existe dado na serial para processar
         serial_buffer_copy();
 
-        //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+        
+        modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
 
         if ( cnt_modem_fault >= 15 ) {
            cnt_modem_fault = 0;
@@ -217,11 +218,15 @@ int main() {
 
         if (0 == ret ) {
             // Modem nao esta como deveria
-            if ( global_timer.on1seg ) {printD("main - Modem Fault"); };
-            if ( global_timer.on1seg ) { cnt_modem_fault++; }
+            if ( global_timer.on1seg ) {
+                printD("main - Modem Fault"); 
+                cnt_modem_fault++;
+            }
             SINALIZA_MODEM_FAULT;
             goto error;
+
         } else {
+            //maquina do modem nao retornou erro
             cnt_modem_fault = 0;
             if ( SUCCESS == ret ) {
                 //tudo certo
