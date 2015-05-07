@@ -98,20 +98,25 @@ void modem_async_parser(void)  {
     }
     if ( _async_comp("NORMAL POWER DOWN") ) {
        //enviado pelo modem qdo comandamos o shutdown
+        printD("assync parser: Normal power Down");
         RX_DATA_ACK;
         return;
     }
     if ( _async_comp("+CPIN: READY") ) {
        //enviado pelo modem qdo comandamos o shutdown
+        printD("assync parser: CPIN READY!");
         RX_DATA_ACK;
         return;
     }
    if ( _async_comp("SMS") ) {
        //enviado pelo modem qdo chega SMS
+       printD("assync parser: SMS!");
         RX_DATA_ACK;
         return;
     }
    if ( _async_comp("ERROR") ) {
+       printD("assync parser: ERROR (SMS?)");
+
        //enviado pelo modem qdo chega SMS
         RX_DATA_ACK;
         return;
@@ -435,7 +440,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=2&data=", state_tx_http);
+            _tx("id=3&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
