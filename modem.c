@@ -250,6 +250,10 @@ unsigned char modem_query_band( void ) {
              break;
         case 5:
             fmt_ceng_flash( rx_data ); //formata e grava na flash
+            //gravando:
+            printD( "grava flash:" );
+            printD( rx_data );
+            
             RX_DATA_ACK; /*Sinaiza que tratou o buffer*/
             indice_banda++;
             state_band = 0;
@@ -403,9 +407,8 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 4:
-            //_tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_tx_http);
-                        _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44:2000\"\r\n", state_tx_http);
-
+            _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_tx_http);
+            //          _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44:2000\"\r\n", state_tx_http);
             break;
 
         case 5:
@@ -432,16 +435,17 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=1&data=", state_tx_http);
+            _tx("id=2&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
-                EUSART2_Write(ch);
+                EUSART1_Write(ch); //transmitindo para a principal
+                EUSART2_Write(ch); //transmitindo para o debug
             }
             break;
 
         case 11:
-            _expect("OK", 5, state_tx_http, http_error);
+            _expect("OK", 10, state_tx_http, http_error);
             break;
 
         case 12:
@@ -449,7 +453,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 13:
-            _expect("+HTTPACTION", 5, state_tx_http, http_error);
+            _expect("+HTTPACTION", 10, state_tx_http, http_error);
             break;
 
         case 14:
