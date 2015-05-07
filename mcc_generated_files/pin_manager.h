@@ -84,20 +84,20 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #define VBAT_CONTROL_SetDigitalInput()    do { TRISA4 = 1; } while(0)
 #define VBAT_CONTROL_SetDigitalOutput()   do { TRISA4 = 0; } while(0)
 
-// get/set VBAT aliases
-#define VBAT_TRIS               TRISA5
-#define VBAT_LAT                LATA5
-#define VBAT_PORT               PORTAbits.RA5
-#define VBAT_ANS                ANSA5
-#define VBAT_SetHigh()    do { LATA5 = 1; } while(0)
-#define VBAT_SetLow()   do { LATA5 = 0; } while(0)
-#define VBAT_Toggle()   do { LATA5 = ~LATA5; } while(0)
-#define VBAT_GetValue()         PORTAbits.RA5
-#define VBAT_SetDigitalInput()    do { TRISA5 = 1; } while(0)
-#define VBAT_SetDigitalOutput()   do { TRISA5 = 0; } while(0)
+// get/set channel_AN4 aliases
+#define channel_AN4_TRIS               TRISA5
+#define channel_AN4_LAT                LATA5
+#define channel_AN4_PORT               PORTAbits.RA5
+#define channel_AN4_ANS                ANSA5
+#define channel_AN4_SetHigh()    do { LATA5 = 1; } while(0)
+#define channel_AN4_SetLow()   do { LATA5 = 0; } while(0)
+#define channel_AN4_Toggle()   do { LATA5 = ~LATA5; } while(0)
+#define channel_AN4_GetValue()         PORTAbits.RA5
+#define channel_AN4_SetDigitalInput()    do { TRISA5 = 1; } while(0)
+#define channel_AN4_SetDigitalOutput()   do { TRISA5 = 0; } while(0)
 
-#define VBAT_SetAnalogMode()   do { ANSA5 = 1; } while(0)
-#define VBAT_SetDigitalMode()   do { ANSA5 = 0; } while(0)
+#define channel_AN4_SetAnalogMode()   do { ANSA5 = 1; } while(0)
+#define channel_AN4_SetDigitalMode()   do { ANSA5 = 0; } while(0)
 // get/set LED_D6 aliases
 #define LED_D6_TRIS               TRISA6
 #define LED_D6_LAT                LATA6

@@ -9,9 +9,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "mcc_generated_files/mcc.h"
 #include "mcc_generated_files/memory.h"
+#include "mcc_generated_files/adc.h"
+
 #include "globals.h"
 #include "modem.h"
 
@@ -50,7 +53,7 @@ void setup (void) {
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
-    VBAT_SetAnalogMode();
+    channel_AN4_SetAnalogMode();
     VBAT_CONTROL_SetLow();
     LED_D6_SetHigh(); // Ligando
 
@@ -64,13 +67,15 @@ void setup (void) {
 
 
 void check_vbat(void){
-    unsigned int vbat;
-    
-    vbat = VBAT_GetValue();
-    if (vbat<200) {
-        if ( global_timer.on1seg) {LED_D7_Toggle();}
-    }
-    
+    unsigned long vbat;
+    char tmp[15];
+
+
+    ADC_Initialize();
+    vbat = ADC_GetConversion(channel_AN4);
+
+    sprintf(tmp,"B:%lu", vbat);
+    printD(tmp);
 }
 
 
@@ -169,44 +174,55 @@ int main() {
     long x, y;
     char cnt = 0;
     char ret = 0;
-    unsigned long cnt_tempo_transmissao = 600; //comecar mandando pra testar
+    unsigned long cnt_tempo_transmissao = 590; //comecar mandando pra testar
+    unsigned char cnt_modem_fault = 0;
 
     setup ();
 
     MODEM_DISABLE;
-
-
 
     while (1) {
         SINALIZA_NORMAL;
 
         if ( global_timer.on1seg ) { cnt_tempo_transmissao++; }
         if ( global_timer.on1seg ) { power_modem( modem_power_status ); } //maquina de estado de configuracao do modem
-
-        //if ( global_timer.on1seg) { check_vbat(); }
-
+        if ( global_timer.on1seg) { check_vbat(); }
 
         // Verifica se existe dado na serial para processar
         serial_buffer_copy();
 
+        //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
 
-       modem_async_parser(); //Ja analiza as mensagens assincronas
+        if ( cnt_modem_fault >= 15 ) {
+           cnt_modem_fault = 0;
+           if (modem_power_status == 1) {
+               MODEM_ENABLE;
+           } else {
+               MODEM_DISABLE;
+           }
+        }
 
-       ret = modem_handler();
+        ret = modem_handler();
  
         // Maquina do Modem rodando
         if ( cnt_tempo_transmissao == 600 ) { //em segundos
-            MODEM_ENABLE;
-            state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
-            if ( global_timer.on1seg ) {printD("main - cnt_tempo_transmissao == 15");}
+            if ( global_timer.on1seg ) {
+                MODEM_ENABLE;
+                state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
+                cnt_modem_fault = 0;
+                printD("main - cnt_tempo_transmissao START");
+            }
+           
         }
-       
+
         if (0 == ret ) {
             // Modem nao esta como deveria
             if ( global_timer.on1seg ) {printD("main - Modem Fault"); };
+            if ( global_timer.on1seg ) { cnt_modem_fault++; }
             SINALIZA_MODEM_FAULT;
             goto error;
         } else {
+            cnt_modem_fault = 0;
             if ( SUCCESS == ret ) {
                 //tudo certo
                 MODEM_DISABLE;

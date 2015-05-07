@@ -51,7 +51,7 @@ void PIN_MANAGER_Initialize(void)
 {
     LATA = 0x10;
     TRISA = 0x2F;
-    ANSELA = 0x0E;
+    ANSELA = 0x2E;
 
     LATB = 0x00;
     TRISB = 0xFF;

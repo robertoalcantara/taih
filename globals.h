@@ -24,7 +24,7 @@
 #define SINALIZA_MODEM_FAULT sinalizacao_status =  SINALIZACAO_MODEM_FAULT;
 #define SINALIZA_SIM_FAULT sinalizacao_status = SINALIZACAO_SIM_FAULT;
 
-#define SINALIZA_MSG_ACK sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
+#define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
 
 #define ERASE_FLASH_BLOCKSIZE 64

@@ -87,7 +87,8 @@ typedef enum
 {
     channel_CTMU =  0x1D,
     channel_DAC =  0x1E,
-    channel_FVRBuf2 =  0x1F
+    channel_FVRBuf2 =  0x1F,
+    channel_AN4 =  0x04
 } adc_channel_t;
 
 /**

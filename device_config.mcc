@@ -6,7 +6,7 @@
             <setting name="sorting" option="true"/>
             <resource customName="NETPIN" digital="true" direction="INPUT" function="RA0" module="GPIO" name="RA0" start="false" type="pin" wpu="false"/>
             <resource customName="VBAT_CONTROL" digital="true" direction="OUTPUT" function="RA4" module="GPIO" name="RA4" start="true" type="pin" wpu="false"/>
-            <resource customName="VBAT" digital="true" direction="INPUT" function="RA5" module="GPIO" name="RA5" start="false" type="pin" wpu="false"/>
+            <resource customName="channel_AN4" digital="false" direction="INPUT" function="AN4" module="ADC" name="RA5" start="false" type="pin" wpu="false"/>
             <resource customName="LED_D6" digital="true" direction="OUTPUT" function="RA6" module="GPIO" name="RA6" start="false" type="pin" wpu="false"/>
             <resource customName="LED_D7" digital="true" direction="OUTPUT" function="RA7" module="GPIO" name="RA7" start="false" type="pin" wpu="false"/>
             <resource customName="BTN" digital="true" direction="INPUT" function="RB0" module="GPIO" name="RB0" start="false" type="pin" wpu="false"/>
@@ -16,18 +16,18 @@
             <resource customName="MODEM_PWR" digital="true" direction="OUTPUT" function="RC0" module="GPIO" name="RC0" start="false" type="pin" wpu="false"/>
             <resource customName="TX1" digital="true" direction="INPUT" function="TX1" module="EUSART1" name="RC6" start="false" type="pin" wpu="false"/>
             <resource customName="RX1" digital="true" direction="INPUT" function="RX1" module="EUSART1" name="RC7" start="false" type="pin" wpu="false"/>
-            <file checksum="3228468539" modified="false" name="pin_manager.c" path="mcc_generated_files/pin_manager.c"/>
-            <file checksum="2812938840" modified="false" name="pin_manager.h" path="mcc_generated_files/pin_manager.h"/>
+            <file checksum="3252454717" modified="false" name="pin_manager.c" path="mcc_generated_files/pin_manager.c"/>
+            <file checksum="2545430222" modified="false" name="pin_manager.h" path="mcc_generated_files/pin_manager.h"/>
         </manager>
         <manager generated="true" name="Interrupt Manager" reloadPin="manual">
             <setting name="preemptHigh" option="false"/>
             <setting name="preemptLow" option="true"/>
             <setting name="useIPEN" option="false"/>
+            <file checksum="3526374056" modified="false" name="interrupt_manager.c" path="mcc_generated_files/interrupt_manager.c"/>
+            <file checksum="1736325646" modified="false" name="interrupt_manager.h" path="mcc_generated_files/interrupt_manager.h"/>
             <interrupt module="TMR0" name="TMRI" priority="2"/>
             <interrupt module="EUSART1" name="RCI" priority="2"/>
             <interrupt module="EUSART1" name="TXI" priority="2"/>
-            <file checksum="3526374056" modified="false" name="interrupt_manager.c" path="mcc_generated_files/interrupt_manager.c"/>
-            <file checksum="1736325646" modified="false" name="interrupt_manager.h" path="mcc_generated_files/interrupt_manager.h"/>
         </manager>
         <manager generated="true" name="System" reloadPin="manual">
             <initializer comment="" name="Initialize">
@@ -90,7 +90,6 @@
     <modules>
         <module generated="true" mode="GPIO" name="GPIO" order="0" reloadPin="manual" type="GPIO">
             <resource customName="NETPIN" digital="true" direction="INPUT" function="RA0" module="GPIO" name="RA0" start="false" type="pin" wpu="false"/>
-            <resource customName="VBAT" digital="true" direction="INPUT" function="RA5" module="GPIO" name="RA5" start="false" type="pin" wpu="false"/>
             <resource customName="VBAT_CONTROL" digital="true" direction="OUTPUT" function="RA4" module="GPIO" name="RA4" start="true" type="pin" wpu="false"/>
             <resource customName="LED_D7" digital="true" direction="OUTPUT" function="RA7" module="GPIO" name="RA7" start="false" type="pin" wpu="false"/>
             <resource customName="LED_D6" digital="true" direction="OUTPUT" function="RA6" module="GPIO" name="RA6" start="false" type="pin" wpu="false"/>
@@ -167,13 +166,14 @@
                 <setting name="NVCFG" option="VSS" register="ADCON1"/>
                 <setting name="ADFM" option="left" register="ADCON2"/>
                 <setting name="ADCS" option="FOSC/64" register="ADCON2"/>
-                <setting name="ACQT" option="0" register="ADCON2"/>
+                <setting name="ACQT" option="12" register="ADCON2"/>
                 <setting name="ADRESL" option="0x0" register="ADRESL"/>
                 <setting name="ADRESH" option="0x0" register="ADRESH"/>
             </initializer>
             <setting name="ADI" option="false"/>
-            <file checksum="1369489312" modified="false" name="adc.c" path="mcc_generated_files/adc.c"/>
-            <file checksum="3116587557" modified="false" name="adc.h" path="mcc_generated_files/adc.h"/>
+            <resource customName="channel_AN4" function="AN4" name="RA5" type="pin"/>
+            <file checksum="166117348" modified="false" name="adc.c" path="mcc_generated_files/adc.c"/>
+            <file checksum="22700172" modified="false" name="adc.h" path="mcc_generated_files/adc.h"/>
         </module>
         <module generated="true" mode="Memory" name="MEMORY" order="4" reloadPin="manual" type="pfm_control">
             <setting name="useEE" option="true"/>

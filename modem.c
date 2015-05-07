@@ -61,10 +61,10 @@ int power_modem( char enable ) {
     if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
     if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
 
-    if ( enable == 0 && PWR_STAT_GetValue()==1 ) { //esta ligado mas deveria ficar desligado
-        printf("AT+CPOWD=1\r\n");
-        return;
-    }
+    //if ( enable == 0 && PWR_STAT_GetValue()==1 ) { //esta ligado mas deveria ficar desligado
+    //    printf("AT+CPOWD=1\r\n");
+    //    return;
+    //}
 
     switch (state_modem) {
         case 0:
@@ -92,6 +92,7 @@ int power_modem( char enable ) {
 void modem_async_parser(void)  {
 
     if ( _async_comp("UNDER-VOLTAGE WARNING") ) {
+        printD("assync parser: Undervoltage!");
         undervoltage();
         RX_DATA_ACK;
         return;
@@ -102,6 +103,14 @@ void modem_async_parser(void)  {
         RX_DATA_ACK;
         return;
     }
+
+    if ( _async_comp("SIM not inserted") ) {
+       //enviado pelo modem qdo comandamos o shutdown
+        printD("assync parser: SIM nao Inserido");
+        RX_DATA_ACK;
+        return;
+    }
+
     if ( _async_comp("+CPIN: READY") ) {
        //enviado pelo modem qdo comandamos o shutdown
         printD("assync parser: CPIN READY!");
@@ -116,6 +125,7 @@ void modem_async_parser(void)  {
     }
    if ( _async_comp("ERROR") ) {
        printD("assync parser: ERROR (SMS?)");
+       printD(rx_data);
 
        //enviado pelo modem qdo chega SMS
         RX_DATA_ACK;
@@ -373,6 +383,8 @@ sa_error:
     if ( strstr(rx_data, "SIM not inserted") ) {
         // Nao tem SIM CARD.
         SINALIZA_SIM_FAULT;
+        printD("modem_enter_gprs: SIM CARD ERROR");
+
     }
 
 gprs_error:
@@ -440,7 +452,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=3&data=", state_tx_http);
+            _tx("id=1&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
