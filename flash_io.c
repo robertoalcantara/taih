@@ -41,7 +41,8 @@ void flash_commit(void) {
     }
     FLASH_WriteBlock(flashAddr, (uint8_t *)flashBuf);
     idx_current_block = 0;
-    flashAddr += BLOCK_SIZE;
+    //flashAddr += BLOCK_SIZE;
+    flashAddr = BASE_ADDR;
 }
 
 

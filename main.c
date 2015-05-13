@@ -192,7 +192,7 @@ int main() {
         serial_buffer_copy();
 
         
-        modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+        //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
 
         if ( cnt_modem_fault >= 15 ) {
            cnt_modem_fault = 0;
