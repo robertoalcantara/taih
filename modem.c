@@ -549,6 +549,7 @@ unsigned char modem_handler(void) {
                     state_location = 0; /* Zera a maq de estado de query de redes */
                     state_band = 0; /* Zera a maq de estado da sequencia das bandas */
                     state_enter_gprs = 0;
+                    RESET_FLASH; //inicia o ponteiro da flash. just in case (commit ao final tb o fara).
                     printD("indo p/ state_main: 2");
 
                 }

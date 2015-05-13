@@ -18,6 +18,9 @@
 #include "globals.h"
 #include "modem.h"
 
+
+#define TEMPO_TRANSMISSAO 500
+
 volatile T_GLOBAL_TIMER global_timer;
 
 
@@ -171,7 +174,7 @@ int main() {
     long x, y;
     char cnt = 0;
     char ret = 0;
-    unsigned long cnt_tempo_transmissao = 590; //comecar mandando pra testar
+    unsigned long cnt_tempo_transmissao = 0; //comecar mandando pra testar
     unsigned char cnt_modem_fault = 0;
 
     setup ();
@@ -206,8 +209,9 @@ int main() {
         ret = modem_handler();
  
         // Maquina do Modem rodando
-        if ( cnt_tempo_transmissao == 600 ) { //em segundos
+        if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
             if ( global_timer.on1seg ) {
+                cnt_tempo_transmissao = 0;
                 MODEM_ENABLE;
                 state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
                 cnt_modem_fault = 0;
@@ -223,7 +227,6 @@ int main() {
                 cnt_modem_fault++;
             }
             SINALIZA_MODEM_FAULT;
-            goto error;
 
         } else {
             //maquina do modem nao retornou erro
@@ -233,12 +236,10 @@ int main() {
                 MODEM_DISABLE;
                 cnt_tempo_transmissao = 0;
                 if ( global_timer.on1seg ) { printD("main - SUCESSO - desligando modem"); }
+                Reset();//teste!!! resetando a bagaca
             }
         }
 
-
-
-error:
 
         handler_sinalizacao();
 
