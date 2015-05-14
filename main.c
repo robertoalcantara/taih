@@ -19,7 +19,7 @@
 #include "modem.h"
 
 
-#define TEMPO_TRANSMISSAO 500
+#define TEMPO_TRANSMISSAO 600
 
 volatile T_GLOBAL_TIMER global_timer;
 
@@ -57,7 +57,6 @@ void setup (void) {
     INTERRUPT_PeripheralInterruptEnable();
 
     channel_AN4_SetAnalogMode();
-    VBAT_CONTROL_SetLow();
     LED_D6_SetHigh(); // Ligando
 
     global_timer.aux_100ms = 0;
@@ -70,15 +69,32 @@ void setup (void) {
 
 
 void check_vbat(void){
-    unsigned long vbat;
+
+    static unsigned long vbat;
+    static unsigned char flag = 0;
     char tmp[15];
 
+    switch (flag) {
+        case 0:
+            VBAT_CONTROL_SetLow();
 
-    ADC_Initialize();
-    vbat = ADC_GetConversion(channel_AN4);
+            ADC_Initialize();
+            flag++;
+            break;
 
-    //sprintf(tmp,"B:%lu", vbat);
-    //printD(tmp);
+        case 1:
+            vbat = ADC_GetConversion(channel_AN4);
+
+            flag++; //esperando um tempo
+            break;
+            
+        case 2:
+            sprintf(tmp,"B:%lu", vbat);
+            printD(tmp);
+            flag = 0;
+            VBAT_CONTROL_SetHigh();
+            break;
+    }
 }
 
 
@@ -93,15 +109,15 @@ void handler_sinalizacao(void) {
 
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
-            if ( global_timer.on1seg ) { LED_D6_Toggle(); LED_D7_SetLow(); }
-            /*if ( 2 == cnt_live ) {
+            //if ( global_timer.on1seg ) { LED_D6_Toggle(); LED_D7_SetLow(); }
+            if ( 4 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
-                if (global_timer.on100ms) {
+                if (global_timer.on10ms) {
                     LED_D6_SetLow();
                 }
-            }*/
+            }
             break;
 
         case SINALIZACAO_MODEM_FAULT:

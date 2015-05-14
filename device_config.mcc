@@ -164,7 +164,7 @@
                 <setting name="PVCFG" option="VDD" register="ADCON1"/>
                 <setting name="TRIGSEL" option="CCP5" register="ADCON1"/>
                 <setting name="NVCFG" option="VSS" register="ADCON1"/>
-                <setting name="ADFM" option="left" register="ADCON2"/>
+                <setting name="ADFM" option="right" register="ADCON2"/>
                 <setting name="ADCS" option="FOSC/64" register="ADCON2"/>
                 <setting name="ACQT" option="12" register="ADCON2"/>
                 <setting name="ADRESL" option="0x0" register="ADRESL"/>
@@ -172,7 +172,7 @@
             </initializer>
             <setting name="ADI" option="false"/>
             <resource customName="channel_AN4" function="AN4" name="RA5" type="pin"/>
-            <file checksum="166117348" modified="false" name="adc.c" path="mcc_generated_files/adc.c"/>
+            <file checksum="3369582694" modified="false" name="adc.c" path="mcc_generated_files/adc.c"/>
             <file checksum="22700172" modified="false" name="adc.h" path="mcc_generated_files/adc.h"/>
         </module>
         <module generated="true" mode="Memory" name="MEMORY" order="4" reloadPin="manual" type="pfm_control">
