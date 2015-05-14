@@ -51,6 +51,8 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #include <xc.h>
 #include "tmr0.h"
 #include "../globals.h"
+#include "mcc.h"
+
 
 /**
   Section: Global Variables Definitions
@@ -148,12 +150,12 @@ void TMR0_ISR(void)
         if (global_timer.aux_100ms >= 10 ) {
             global_timer.aux_100ms = 0;
             global_timer.on100ms = 1;
-            global_timer.aux_1s++;
+            //global_timer.aux_1s++;
         }
-        if (global_timer.aux_1s >= 10 ) {
+        /*if (global_timer.aux_1s >= 10 ) {
             global_timer.aux_1s = 0;
             global_timer.on1seg = 1;
-        }
+        }*/
     }
 
 

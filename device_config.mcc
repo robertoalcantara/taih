@@ -23,11 +23,12 @@
             <setting name="preemptHigh" option="false"/>
             <setting name="preemptLow" option="true"/>
             <setting name="useIPEN" option="false"/>
-            <file checksum="3526374056" modified="false" name="interrupt_manager.c" path="mcc_generated_files/interrupt_manager.c"/>
+            <file checksum="3918089862" modified="false" name="interrupt_manager.c" path="mcc_generated_files/interrupt_manager.c"/>
             <file checksum="1736325646" modified="false" name="interrupt_manager.h" path="mcc_generated_files/interrupt_manager.h"/>
             <interrupt module="TMR0" name="TMRI" priority="2"/>
             <interrupt module="EUSART1" name="RCI" priority="2"/>
             <interrupt module="EUSART1" name="TXI" priority="2"/>
+            <interrupt module="TMR1" name="TMRI" priority="2"/>
         </manager>
         <manager generated="true" name="System" reloadPin="manual">
             <initializer comment="" name="Initialize">
@@ -83,8 +84,8 @@
             <setting name="EBTR0" option="OFF"/>
             <setting name="EBTRB" option="OFF"/>
             <setting name="generateConfigBits" option="true"/>
-            <file checksum="2537833215" modified="false" name="mcc.c" path="mcc_generated_files/mcc.c"/>
-            <file checksum="2441357286" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
+            <file checksum="2796964360" modified="true" name="mcc.c" path="mcc_generated_files/mcc.c"/>
+            <file checksum="1369648501" modified="false" name="mcc.h" path="mcc_generated_files/mcc.h"/>
         </manager>
     </managers>
     <modules>
@@ -218,6 +219,33 @@
             <setting name="stdio" option="false"/>
             <file checksum="795254176" modified="false" name="eusart2.c" path="mcc_generated_files/eusart2.c"/>
             <file checksum="2100514027" modified="false" name="eusart2.h" path="mcc_generated_files/eusart2.h"/>
+        </module>
+        <module generated="true" mode="Timer" name="TMR1" order="6" reloadPin="manual" type="tmr_timer1">
+            <initializer comment="" name="Initialize">
+                <setting name="T1OSCEN" option="disabled" register="T1CON"/>
+                <setting name="T1RD16" option="disabled" register="T1CON"/>
+                <setting name="TMR1CS" option="FOSC/4" register="T1CON"/>
+                <setting name="T1CKPS" option="1:8" register="T1CON"/>
+                <setting name="T1SYNC" option="do_not_synchronize" register="T1CON"/>
+                <setting name="TMR1ON" option="disabled" register="T1CON"/>
+                <setting name="T1GSPM" option="disabled" register="T1GCON"/>
+                <setting name="T1GVAL" option="disabled" register="T1GCON"/>
+                <setting name="T1GSS" option="T1G" register="T1GCON"/>
+                <setting name="T1GTM" option="disabled" register="T1GCON"/>
+                <setting name="T1GPOL" option="low" register="T1GCON"/>
+                <setting name="TMR1GE" option="disabled" register="T1GCON"/>
+                <setting name="T1GGO" option="done" register="T1GCON"/>
+                <setting name="TMR1H" option="11" register="TMR1H"/>
+                <setting name="TMR1L" option="220" register="TMR1L"/>
+                <additionalSetting name="externalFreq" option=""/>
+                <additionalSetting name="timerstart" option="enabled"/>
+            </initializer>
+            <setting name="TMRI" option="true"/>
+            <setting name="TMRGI" option="false"/>
+            <setting name="ticker" option="0"/>
+            <setting name="hasGate" option="true"/>
+            <file checksum="4128172175" modified="true" name="tmr1.c" path="mcc_generated_files/tmr1.c"/>
+            <file checksum="931907630" modified="false" name="tmr1.h" path="mcc_generated_files/tmr1.h"/>
         </module>
     </modules>
 </configuration>

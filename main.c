@@ -37,12 +37,12 @@ unsigned char sinalizacao_status = 0;
 
 
 void printD(const char* str) {
-    while (*str) {
+  /*  while (*str) {
         EUSART2_Write(*str);
         str++;
     }
     EUSART2_Write('\r');
-    EUSART2_Write('\n');
+    EUSART2_Write('\n');*/
 }
 
 
@@ -62,8 +62,6 @@ void setup (void) {
     global_timer.aux_100ms = 0;
     global_timer.aux_10ms = 0;
     global_timer.aux_1s = 0;
-
-    printD("Serial DEBUG");
 
 }
 
@@ -110,27 +108,26 @@ void handler_sinalizacao(void) {
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
             //if ( global_timer.on1seg ) { LED_D6_Toggle(); LED_D7_SetLow(); }
-            if ( 4 == cnt_live ) {
+            if ( 5 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
-                if (global_timer.on10ms) {
-                    LED_D6_SetLow();
-                }
+                LED_D6_SetLow();
             }
             break;
 
         case SINALIZACAO_MODEM_FAULT:
             if ( global_timer.on100ms) {
                 LED_D6_Toggle();
-                LED_D7_LAT = !LED_D6_LAT;
+               // LED_D7_LAT = !LED_D6_LAT;
             }
             return; /* Afeta o D7, nem olha as sinalizacoes temporarias */
+            break;
 
         case SINALIZACAO_SIM_FAULT:
             if ( global_timer.on100ms) {
                 LED_D6_Toggle();
-                LED_D7_LAT = LED_D6_LAT;
+              //  LED_D7_LAT = LED_D6_LAT;
             }
             return; /* Afeta o D7 */
     }
@@ -138,10 +135,10 @@ void handler_sinalizacao(void) {
     //essa sinalizaco eh do tipo temporaria
     switch (sinalizacao_status & 0xF0) {
         case SINALIZACAO_MSG_ACK:
-            LED_D7_SetHigh();
+           // LED_D7_SetHigh();
             if ( global_timer.on10ms) {
                 sinalizacao_status = (0x0F & sinalizacao_status);
-                LED_D7_SetLow();
+            //    LED_D7_SetLow();
             }
             break;
             
@@ -190,25 +187,35 @@ int main() {
     long x, y;
     char cnt = 0;
     char ret = 0;
-    unsigned long cnt_tempo_transmissao = 0; //comecar mandando pra testar
+    unsigned long cnt_tempo_transmissao = TEMPO_TRANSMISSAO-10; //comecar mandando pra testar
     unsigned char cnt_modem_fault = 0;
 
     setup ();
 
     MODEM_DISABLE;
+    
+
+   TMR0ON = 0;
 
     while (1) {
-        SINALIZA_NORMAL;
+        
 
-        if ( global_timer.on1seg ) {
+      SINALIZA_NORMAL;
+
+       power_modem( modem_power_status );  //maquina de estado de configuracao do modem
+
+       if ( global_timer.on1seg ) {
             cnt_tempo_transmissao++; 
-            power_modem( modem_power_status );  //maquina de estado de configuracao do modem
             check_vbat();
+
         }
 
     
         // Verifica se existe dado na serial para processar
-        serial_buffer_copy();
+        if (modem_power_status) {
+            //so verifica se o modem estiver ligado.
+            serial_buffer_copy();
+        }
 
         
         //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
@@ -223,18 +230,24 @@ int main() {
         }
 
         ret = modem_handler();
- 
+
+
         // Maquina do Modem rodando
         if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
-            if ( global_timer.on1seg ) {
-                cnt_tempo_transmissao = 0;
-                MODEM_ENABLE;
-                state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
-                cnt_modem_fault = 0;
-                printD("main - cnt_tempo_transmissao START");
-            }
-           
+            TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
+            EUSART1_Initialize();
+
+            EUSART2_Initialize();
+
+
+            cnt_tempo_transmissao = 0;
+            MODEM_ENABLE;
+            state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
+            cnt_modem_fault = 0;
+            printD("main - cnt_tempo_transmissao START");
         }
+           
+        
 
         if (0 == ret ) {
             // Modem nao esta como deveria
@@ -251,7 +264,6 @@ int main() {
                 //tudo certo
                 MODEM_DISABLE;
                 cnt_tempo_transmissao = 0;
-                if ( global_timer.on1seg ) { printD("main - SUCESSO - desligando modem"); }
                 Reset();//teste!!! resetando a bagaca
             }
         }
@@ -260,12 +272,20 @@ int main() {
         handler_sinalizacao();
 
         /* flags de tempo */
+
         global_timer.on1seg  = 0;
         global_timer.on100ms = 0;
         global_timer.on10ms  = 0;
         global_timer.on1ms  = 0;
 
-        while (global_timer.on1ms == 0) { /* Fazer nada */  }
+
+        ClrWdt();
+        IDLEN = 1; //sleep entra em modo idle
+        SCS1 = 1;
+        SCS0 = 0;
+        Sleep(); //so sai na interrupcao do tmr0 ou tmr1
+
+        //while ((global_timer.on1ms == 0) ) { /* Fazer nada */  }
 
     }
 

@@ -114,10 +114,11 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     PIN_MANAGER_Initialize();
     INTERRUPT_Initialize();
-    TMR0_Initialize();
-    EUSART1_Initialize();
+   TMR0_Initialize();
+    //EUSART1_Initialize();
     ADC_Initialize();
-    EUSART2_Initialize();
+    //EUSART2_Initialize();
+    TMR1_Initialize();
 }
 
 void OSCILLATOR_Initialize(void)
@@ -129,6 +130,8 @@ void OSCILLATOR_Initialize(void)
     // INTSRC disabled; PLLEN disabled; TUN 0x00; 
     OSCTUNE = 0x00;
     // Set the secondary oscillator
+
+    OSCCON = OSCCON | 0b10000000; //sleep entra em modo idle
     
 }
 

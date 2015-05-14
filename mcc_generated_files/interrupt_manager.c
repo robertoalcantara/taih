@@ -62,6 +62,8 @@ void  INTERRUPT_Initialize (void)
     IPR1bits.RC1IP = 0;
     // TXI
     IPR1bits.TX1IP = 0;
+    // TMRI
+    IPR1bits.TMR1IP = 0;
 }
 
 void interrupt INTERRUPT_InterruptManager (void)
@@ -78,6 +80,10 @@ void interrupt INTERRUPT_InterruptManager (void)
     if(PIE1bits.TX1IE == 1 && PIR1bits.TX1IF == 1)
     {
         EUSART1_Transmit_ISR();
+    }
+    if(PIE1bits.TMR1IE == 1 && PIR1bits.TMR1IF == 1)
+    {
+        TMR1_ISR();
     }
 }
 

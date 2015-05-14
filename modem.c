@@ -490,6 +490,9 @@ unsigned char modem_tx_http( void ) {
 
         case 18:
             state_tx_http++;
+            
+            printf("AT+CPOWD=1\r\n");
+
             printD("\r\nFIM SUCC\r\n");
             return SUCCESS;
 
@@ -560,6 +563,7 @@ unsigned char modem_handler(void) {
                     state_enter_gprs = 0;
                     state_main++;
                     printD("indo p/ state_main: 3");
+                    LED_D7_SetHigh();
                 }
                 break;
 
@@ -580,6 +584,7 @@ unsigned char modem_handler(void) {
                 break;
                 
             case 5:
+                LED_D7_SetLow();
                 printD("state_main: 5");
                 printD("MAIN SCUCESS");
                 state_main++;
