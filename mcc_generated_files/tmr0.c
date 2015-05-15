@@ -150,12 +150,8 @@ void TMR0_ISR(void)
         if (global_timer.aux_100ms >= 10 ) {
             global_timer.aux_100ms = 0;
             global_timer.on100ms = 1;
-            //global_timer.aux_1s++;
         }
-        /*if (global_timer.aux_1s >= 10 ) {
-            global_timer.aux_1s = 0;
-            global_timer.on1seg = 1;
-        }*/
+        /* O flag de 1s eh controlado pelo timer1 */
     }
 
 

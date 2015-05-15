@@ -18,6 +18,7 @@
 #include "globals.h"
 #include "modem.h"
 
+#define DEBUG 1
 
 #define TEMPO_TRANSMISSAO 600
 
@@ -37,12 +38,14 @@ unsigned char sinalizacao_status = 0;
 
 
 void printD(const char* str) {
-  /*  while (*str) {
+#ifdef DEBUG
+    while (*str) {
         EUSART2_Write(*str);
         str++;
     }
     EUSART2_Write('\r');
-    EUSART2_Write('\n');*/
+    EUSART2_Write('\n');
+#endif
 }
 
 
@@ -51,13 +54,12 @@ void printD(const char* str) {
  */
 void setup (void) {
 
-    SYSTEM_Initialize();
+    SYSTEM_Initialize(); //serial e AD NAO inicializados para economizar energia.
     
     INTERRUPT_GlobalInterruptEnable();
     INTERRUPT_PeripheralInterruptEnable();
 
     channel_AN4_SetAnalogMode();
-    LED_D6_SetHigh(); // Ligando
 
     global_timer.aux_100ms = 0;
     global_timer.aux_10ms = 0;
@@ -69,30 +71,18 @@ void setup (void) {
 void check_vbat(void){
 
     static unsigned long vbat;
-    static unsigned char flag = 0;
+#ifdef DEBUG
     char tmp[15];
-
-    switch (flag) {
-        case 0:
-            VBAT_CONTROL_SetLow();
-
-            ADC_Initialize();
-            flag++;
-            break;
-
-        case 1:
-            vbat = ADC_GetConversion(channel_AN4);
-
-            flag++; //esperando um tempo
-            break;
-            
-        case 2:
-            sprintf(tmp,"B:%lu", vbat);
-            printD(tmp);
-            flag = 0;
-            VBAT_CONTROL_SetHigh();
-            break;
-    }
+#endif
+    ADC_Initialize();
+    VBAT_CONTROL_SetLow();
+    vbat = ADC_GetConversion(channel_AN4);
+    VBAT_CONTROL_SetHigh();
+    
+#ifdef DEBUG
+    sprintf(tmp,"B:%lu", vbat);
+    printD(tmp);
+#endif            
 }
 
 
@@ -107,27 +97,25 @@ void handler_sinalizacao(void) {
 
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
-            //if ( global_timer.on1seg ) { LED_D6_Toggle(); LED_D7_SetLow(); }
             if ( 5 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
                 LED_D6_SetLow();
+                LED_D7_SetLow();
             }
             break;
 
         case SINALIZACAO_MODEM_FAULT:
             if ( global_timer.on100ms) {
                 LED_D6_Toggle();
-               // LED_D7_LAT = !LED_D6_LAT;
             }
-            return; /* Afeta o D7, nem olha as sinalizacoes temporarias */
             break;
 
         case SINALIZACAO_SIM_FAULT:
             if ( global_timer.on100ms) {
                 LED_D6_Toggle();
-              //  LED_D7_LAT = LED_D6_LAT;
+                LED_D7_LAT = LED_D6_LAT;
             }
             return; /* Afeta o D7 */
     }
@@ -135,14 +123,12 @@ void handler_sinalizacao(void) {
     //essa sinalizaco eh do tipo temporaria
     switch (sinalizacao_status & 0xF0) {
         case SINALIZACAO_MSG_ACK:
-           // LED_D7_SetHigh();
+            LED_D7_SetHigh();
             if ( global_timer.on10ms) {
                 sinalizacao_status = (0x0F & sinalizacao_status);
-            //    LED_D7_SetLow();
+                LED_D7_SetLow();
             }
-            break;
-            
-            
+            break;            
     }
 }
 
@@ -173,8 +159,6 @@ void serial_buffer_copy(void){
             rx_data_available = 1;
             break;
         }
-
-
     }
 
 }
@@ -187,27 +171,23 @@ int main() {
     long x, y;
     char cnt = 0;
     char ret = 0;
-    unsigned long cnt_tempo_transmissao = TEMPO_TRANSMISSAO-10; //comecar mandando pra testar
+    unsigned long cnt_tempo_transmissao = 0; //comecar mandando pra testar
     unsigned char cnt_modem_fault = 0;
 
     setup ();
 
     MODEM_DISABLE;
-    
+   
 
-   TMR0ON = 0;
+    TMR0ON = 0;
 
     while (1) {
         
 
       SINALIZA_NORMAL;
 
-       power_modem( modem_power_status );  //maquina de estado de configuracao do modem
-
        if ( global_timer.on1seg ) {
             cnt_tempo_transmissao++; 
-            check_vbat();
-
         }
 
     
@@ -215,12 +195,11 @@ int main() {
         if (modem_power_status) {
             //so verifica se o modem estiver ligado.
             serial_buffer_copy();
+            //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
         }
 
-        
-        //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
-
-        if ( cnt_modem_fault >= 15 ) {
+       
+        if ( cnt_modem_fault >= 30 ) {
            cnt_modem_fault = 0;
            if (modem_power_status == 1) {
                MODEM_ENABLE;
@@ -229,17 +208,17 @@ int main() {
            }
         }
 
-        ret = modem_handler();
 
 
         // Maquina do Modem rodando
         if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
+
             TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
             EUSART1_Initialize();
-
             EUSART2_Initialize();
+            ADC_Initialize();
 
-
+            check_vbat();
             cnt_tempo_transmissao = 0;
             MODEM_ENABLE;
             state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
@@ -247,7 +226,8 @@ int main() {
             printD("main - cnt_tempo_transmissao START");
         }
            
-        
+        ret = modem_handler();
+
 
         if (0 == ret ) {
             // Modem nao esta como deveria
@@ -258,13 +238,13 @@ int main() {
             SINALIZA_MODEM_FAULT;
 
         } else {
+            
             //maquina do modem nao retornou erro
             cnt_modem_fault = 0;
             if ( SUCCESS == ret ) {
                 //tudo certo
-                MODEM_DISABLE;
                 cnt_tempo_transmissao = 0;
-                Reset();//teste!!! resetando a bagaca
+                Reset();//Resetando tudo e voltando para o modo baixo consumo.
             }
         }
 
@@ -283,9 +263,7 @@ int main() {
         IDLEN = 1; //sleep entra em modo idle
         SCS1 = 1;
         SCS0 = 0;
-        Sleep(); //so sai na interrupcao do tmr0 ou tmr1
-
-        //while ((global_timer.on1ms == 0) ) { /* Fazer nada */  }
+        Sleep(); // So sai na interrupcao do tmr0 ou tmr1  (1seg ou 1ms)
 
     }
 

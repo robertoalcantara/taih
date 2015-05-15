@@ -6,12 +6,11 @@
  */
 
 
-
-
-
 #ifndef GLOBALS_H
-
 #define	GLOBALS_H
+
+#define _XTAL_FREQ 2000000
+
 #define RX_BUFFER_SIZE 512
 
 #define SINALIZACAO_NORMAL 0x00

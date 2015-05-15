@@ -116,7 +116,7 @@ void SYSTEM_Initialize(void)
     INTERRUPT_Initialize();
    TMR0_Initialize();
     //EUSART1_Initialize();
-    ADC_Initialize();
+    //ADC_Initialize();
     //EUSART2_Initialize();
     TMR1_Initialize();
 }

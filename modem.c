@@ -7,6 +7,8 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <xc.h>
+
 #include "mcc_generated_files/mcc.h"
 
 #include "globals.h"
@@ -53,35 +55,25 @@ unsigned char modem_setup ( void );
 #define NUM_BANDS 8
 const unsigned char band_modes[NUM_BANDS][16] = { "EGSM_MODE","DCS_MODE","GSM850_MODE","PCS_MODE","EGSM_DCS_MODE","GSM850_PCS_MODE","EGSM_PCS_MODE","ALL_BAND" };
 
+void delay_10ms(unsigned long vl ) {
 
+    for (int i=0; i<=vl; i++)
+    __delay_ms(10);
+}
 
 
 int power_modem( char enable ) {
 
-
-    if ( enable==1 && PWR_STAT_GetValue()==1) { return; /* Ja ligado */ }
-    if ( enable==0 && PWR_STAT_GetValue()==0) { return; /* Ja Desligado */ }
-
-    //if ( enable == 0 && PWR_STAT_GetValue()==1 ) { //esta ligado mas deveria ficar desligado
-    //    printf("AT+CPOWD=1\r\n");
-    //    return;
-    //}
-
-    switch (state_modem) {
-        case 0:
-            MODEM_PWR_SetLow();
-            if ( global_timer.on1seg ) state_modem++;
-            break;
-
-        case 1:
-            MODEM_PWR_SetHigh();
-            if ( global_timer.on1seg ) state_modem++;
-            break;
-
-        case 2:
-            MODEM_PWR_SetLow();
-            state_modem++;
-            break;
+    while ( PWR_STAT_GetValue() != enable ) {
+        MODEM_PWR_SetLow();
+        LED_D7_SetLow();
+        delay_10ms(100);
+        MODEM_PWR_SetHigh();
+        LED_D7_SetHigh();
+        delay_10ms(150);
+        MODEM_PWR_SetLow();
+        LED_D7_SetLow();
+        delay_10ms(300); 
     }
 
 }
@@ -527,7 +519,7 @@ unsigned char modem_handler(void) {
         if (global_timer.on1seg) {
             modem_global_timeout++;
 
-            if (modem_global_timeout >= 220) {
+            if (modem_global_timeout >= 400) {
                 modem_global_timeout = 0;
                 state_main = 0;
                 MODEM_DISABLE;
@@ -563,11 +555,11 @@ unsigned char modem_handler(void) {
                     state_enter_gprs = 0;
                     state_main++;
                     printD("indo p/ state_main: 3");
-                    LED_D7_SetHigh();
                 }
                 break;
 
             case 3:
+                LED_D7_SetHigh();
 
                 if (modem_enter_gprs() == SUCCESS) {
                     state_main++;
@@ -577,6 +569,8 @@ unsigned char modem_handler(void) {
                 break;
 
             case 4:
+                 LED_D7_SetHigh();
+
                 if (modem_tx_http()==SUCCESS) {
                     state_main++;
                     printD("indo p/ state_main: 5");
@@ -590,7 +584,6 @@ unsigned char modem_handler(void) {
                 state_main++;
                 return SUCCESS;
         }
-        //if (global_timer.on1seg) printD("E: %d G: %d\n\r", state_main, state_gprs);
 
     }
     
