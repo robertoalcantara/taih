@@ -30,7 +30,7 @@
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
 
-
+extern unsigned long vbat;
 extern unsigned char rx_data_available;
 extern unsigned char rx_data[RX_BUFFER_SIZE];
 extern unsigned int rx_data_index;

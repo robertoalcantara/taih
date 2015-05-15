@@ -393,6 +393,7 @@ unsigned char modem_tx_http( void ) {
     unsigned long count = 0;
     uint32_t flashAdd;
     unsigned char ch;
+    unsigned int http_tx_len;
 
     switch (state_tx_http) {
 
@@ -430,9 +431,10 @@ unsigned char modem_tx_http( void ) {
             _expect("OK", 5, state_tx_http, http_error);
             break;
 
-        case 8: //mesmo que o _tx mas com parametro no printf...
-            http_pack_len = http_pack_len + 10; //id=1&data=
-            printf("AT+HTTPDATA=%d,20000\r\n", http_pack_len);
+        case 8: //mesmo que o _tx mas com parametro no printf...  muito cuidado com os tamanhos ;)  o for eh http_len_pack
+            sprintf( str_tmp, "%d", vbat);
+            http_tx_len = http_pack_len + 10 + 2 + strlen(str_tmp);  //id=1&data=  +! +@
+            printf("AT+HTTPDATA=%d,20000\r\n", http_tx_len);
             state_tx_http++;
             RX_DATA_ACK;
             break;
@@ -449,6 +451,9 @@ unsigned char modem_tx_http( void ) {
                 EUSART1_Write(ch); //transmitindo para a principal
                 EUSART2_Write(ch); //transmitindo para o debug
             }
+            EUSART1_Write('!');
+            printf("%s", str_tmp);
+            EUSART1_Write('@');
             break;
 
         case 11:

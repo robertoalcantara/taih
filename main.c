@@ -34,6 +34,7 @@ unsigned char battery_level = 0;
 unsigned char modem_power_status = 0;
 
 unsigned char sinalizacao_status = 0;
+unsigned long vbat;
 
 
 
@@ -70,7 +71,7 @@ void setup (void) {
 
 void check_vbat(void){
 
-    static unsigned long vbat;
+    
 #ifdef DEBUG
     char tmp[15];
 #endif
