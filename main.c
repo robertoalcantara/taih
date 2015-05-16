@@ -219,7 +219,7 @@ int main() {
         if (modem_power_status) {
             //so verifica se o modem estiver ligado.
             serial_buffer_copy();
-            //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+            modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
         }
 
         if (0 == ret ) {
@@ -243,6 +243,7 @@ int main() {
 
 
         if ( cnt_modem_fault >= 30 ) {
+           printD("main - modem fault>30)");
            cnt_modem_fault = 0;
            if (modem_power_status == 1) {
                MODEM_ENABLE;

@@ -21,7 +21,7 @@
 #define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
 #define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
-#define _async_comp(A) strstr( rx_data, A )
+#define _async_comp(A) strcmp( rx_data, A )
 
 #define _tx(A,B) printf ((char *) A); B++; printD(A); RX_DATA_ACK; __delay_ms(1); //apenas para nao esperar novo laco para tratar resposta
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
@@ -84,60 +84,61 @@ int power_modem( char enable ) {
 
 void modem_async_parser(void)  {
     
-    if ( _async_comp("UNDER-VOLTAGE WARNING") ) {
+    if ( 0 == _async_comp("UNDER-VOLTAGE WARNING\n") ) {
         printD("assync parser: Undervoltage!");
         undervoltage();
         RX_DATA_ACK;
         return;
     }
-    if ( _async_comp("NORMAL POWER DOWN") ) {
+    if ( 0 == _async_comp("NORMAL POWER DOWN\n") ) {
        //enviado pelo modem qdo comandamos o shutdown
         printD("assync parser: Normal power Down");
         RX_DATA_ACK;
         return;
     }
 
-    if ( _async_comp("SIM not inserted") ) {
+    if ( 0 == _async_comp("SIM not inserted\n") ) {
        //enviado pelo modem qdo comandamos o shutdown
         printD("assync parser: SIM nao Inserido");
         RX_DATA_ACK;
         return;
     }
 
-    if ( _async_comp("+CPIN: READY") ) {
+    if ( 0 == _async_comp("+CPIN: READY\n") ) {
        //enviado pelo modem qdo comandamos o shutdown
         printD("assync parser: CPIN READY!");
         RX_DATA_ACK;
         return;
     }
-   if ( _async_comp("SMS") ) {
+   if ( 0 == _async_comp("SMS\n") ) {
        //enviado pelo modem qdo chega SMS
        printD("assync parser: SMS!");
         RX_DATA_ACK;
         return;
     }
-   if ( _async_comp("ERROR") ) {
-       printD("assync parser: ERROR (SMS?)");
-       printD(rx_data);
 
-       //enviado pelo modem qdo chega SMS
-        RX_DATA_ACK;
-        return;
-    }
-    if ( _async_comp("VOLTAGE POWER DOWN") ) {
-            printD("assync parser: desligando modem");
-
+    if ( 0 == _async_comp("VOLTAGE POWER DOWN\n") ) {
+       printD("assync parser: desligando modem");
        //enviado pelo modem qdo comandamos o shutdown
         RX_DATA_ACK;
         return;
     }
 
-    if ( _async_comp("+CME ERROR: operation not allowed") ) {
+    if ( 0 == _async_comp("+CME ERROR: operation not allowed\n") ) {
        //Erro qdo nao consegue entrar na rede gprs
         printD("\r\nErro ao gprs  async  CME Error\r\n");
         RX_DATA_ACK;
         return;
     }
+
+    if ( 0 == _async_comp("+CENG: 1,1\n") ){
+        printD("\r\nCENG 1,1 Tratado Assincrono\r\n");
+        RX_DATA_ACK;
+        return;
+    }
+
+
+
 }
 
 void undervoltage(void) {
@@ -240,20 +241,22 @@ unsigned char modem_query_band( void ) {
             _tx( str_tmp , state_band);
             break;
         case 1:
-            _nonblock_wait_start( DELAY_ATCBAND, state_band );
+           _expect("OK", 2, state_band, band_error);
             break;
         case 2:
-            _nonblock_wait(state_band);
+            _nonblock_wait_start( DELAY_ATCBAND, state_band );
             break;
         case 3:
+            _nonblock_wait(state_band);
+            break;
+        case 4:
             _tx("AT+CENG?\r\n", state_band);
             break;
- 
-        case 4:
+        case 5:
              _expect_keep_buffer("OK", 5, state_band, band_error);
              /* o buffer eh importante na sequencia, mante-lo intocado*/
              break;
-        case 5:
+        case 6:
             fmt_ceng_flash( rx_data ); //formata e grava na flash
             //gravando:
             printD( "grava flash:" );
