@@ -243,7 +243,7 @@ unsigned char modem_query_band( void ) {
             _tx( str_tmp , state_band);
             break;
         case 1:
-           _expect("OK", 2, state_band, band_error);
+           _expect("OK", 5, state_band, band_error);
             break;
         case 2:
             _nonblock_wait_start( DELAY_ATCBAND, state_band );
