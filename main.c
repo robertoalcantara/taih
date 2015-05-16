@@ -188,6 +188,7 @@ int main() {
     char ret = 0;
     unsigned long cnt_tempo_transmissao = 0; //comecar mandando pra testar
     unsigned char cnt_modem_fault = 0;
+    static unsigned char flag_low_bat = 0;
 
     setup ();
 
@@ -198,10 +199,9 @@ int main() {
 
     while (1) {
         
+       SINALIZA_NORMAL;
 
-      SINALIZA_NORMAL;
-    
-       
+      
        if ( global_timer.on1seg ) {
             cnt_tempo_transmissao++;
        }
@@ -215,6 +215,7 @@ int main() {
 
             if ( check_vbat() == LOW_BATTERY) {
                 /* Nao da mais pra ligar o modem */
+                flag_low_bat = 1;
                 printD("main - LOW BATTERY");
                 cnt_tempo_transmissao = TEMPO_TRANSMISSAO - 10; //forcando passar aqui e checar a bateria novamente em 10s
                 LED_D6_SetHigh();
@@ -226,6 +227,7 @@ int main() {
                 goto battery_error;
             }
 
+            flag_low_bat = 0;
             TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
             EUSART1_Initialize();
 
@@ -275,10 +277,18 @@ int main() {
            }
         }
 
+
+        
+battery_error:  
+
+     if ( 0 == flag_low_bat) {
+        //se a bateria estiver baixa nao sinalizar no handler. Sinalizacao propria no vbat
         handler_sinalizacao();
-
- battery_error:  //nem olha a sinalizacao em low battery.
-
+    } else {
+           LED_D6_SetLow();
+           LED_D7_SetLow();
+    }
+ 
         /* flags de tempo */
 
         global_timer.on1seg  = 0;

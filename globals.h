@@ -23,6 +23,9 @@
 #define SINALIZA_MODEM_FAULT sinalizacao_status =  SINALIZACAO_MODEM_FAULT;
 #define SINALIZA_SIM_FAULT sinalizacao_status = SINALIZACAO_SIM_FAULT;
 
+#define SINALIZA_NADA sinalizacao_status = 99; //qdo em bateria baixa desliga a sinalizacao
+
+
 #define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
 #define LOW_BATTERY 10
