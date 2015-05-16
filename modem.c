@@ -23,7 +23,7 @@
 
 #define _async_comp(A) strstr( rx_data, A )
 
-#define _tx(A,B) printf ((char *) A); B++; printD(A); RX_DATA_ACK;
+#define _tx(A,B) printf ((char *) A); B++; printD(A); RX_DATA_ACK; __delay_ms(1); //apenas para nao esperar novo laco para tratar resposta
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 

@@ -157,7 +157,11 @@ void serial_buffer_copy(void){
         rx_data[ rx_data_index ] = 0; //garantindo sempre...
 
         if ( aux == '\n' ) {
-            if (rx_data_available) { /* Buffer overrun! */ printD("Buffer Overrun"); }
+
+            //detectar enter vazio (linha em branco)
+            if (rx_data_index == 1) { rx_data_index = 0; continue; }
+
+            if (rx_data_available) { /* Buffer overrun OU conjunto de mensagens com varios \n! */ }
 
             SINALIZA_MSG_ACK;
             rx_data_available = 1;
@@ -188,13 +192,6 @@ int main() {
 
       SINALIZA_NORMAL;
     
-        // Verifica se existe dado na serial para processar
-        if (modem_power_status) {
-            //so verifica se o modem estiver ligado.
-            serial_buffer_copy();
-            //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
-        }
-
        
        if ( global_timer.on1seg ) {
             cnt_tempo_transmissao++;
@@ -217,6 +214,13 @@ int main() {
         }
       
         ret = modem_handler();
+
+        // Verifica se existe dado na serial para processar
+        if (modem_power_status) {
+            //so verifica se o modem estiver ligado.
+            serial_buffer_copy();
+            //modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+        }
 
         if (0 == ret ) {
             // Modem nao esta como deveria
