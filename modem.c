@@ -37,6 +37,8 @@ unsigned char state_band = 0;
 unsigned char state_enter_gprs = 0;
 unsigned char state_tx_http = 0;
 
+unsigned long modem_global_timeout = 0;
+
 
 unsigned char indice_banda = 0;
 unsigned char exp;
@@ -516,8 +518,6 @@ http_error:
  *
  */
 unsigned char modem_handler(void) {
-    static unsigned long modem_global_timeout = 0;
-
     if (PWR_STAT_GetValue() != modem_power_status) { return 0; } //FAULT
     
     if ( modem_power_status ) {
