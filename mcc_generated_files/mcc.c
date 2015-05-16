@@ -114,7 +114,7 @@ void SYSTEM_Initialize(void)
     OSCILLATOR_Initialize();
     PIN_MANAGER_Initialize();
     INTERRUPT_Initialize();
-   TMR0_Initialize();
+    TMR0_Initialize();
     //EUSART1_Initialize();
     //ADC_Initialize();
     //EUSART2_Initialize();

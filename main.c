@@ -20,7 +20,11 @@
 
 #define DEBUG 1
 
-#define TEMPO_TRANSMISSAO 600
+#ifdef DEBUG
+    #define TEMPO_TRANSMISSAO 30
+#else
+    #define TEMPO_TRANSMISSAO 600
+#endif
 
 volatile T_GLOBAL_TIMER global_timer;
 
@@ -64,7 +68,6 @@ void setup (void) {
 
     global_timer.aux_100ms = 0;
     global_timer.aux_10ms = 0;
-    global_timer.aux_1s = 0;
 
 }
 
@@ -137,8 +140,6 @@ void handler_sinalizacao(void) {
 void serial_buffer_copy(void){
     char aux;
 
-    if (rx_data_available) { /* Buffer overrun! */ }
-
     while ( eusart1RxCount > 0  ) {
         aux = EUSART1_Read();
 
@@ -156,6 +157,8 @@ void serial_buffer_copy(void){
         rx_data[ rx_data_index ] = 0; //garantindo sempre...
 
         if ( aux == '\n' ) {
+            if (rx_data_available) { /* Buffer overrun! */ printD("Buffer Overrun"); }
+
             SINALIZA_MSG_ACK;
             rx_data_available = 1;
             break;
@@ -169,28 +172,21 @@ void serial_buffer_copy(void){
  * 
  */
 int main() {
-    long x, y;
-    char cnt = 0;
     char ret = 0;
     unsigned long cnt_tempo_transmissao = 0; //comecar mandando pra testar
     unsigned char cnt_modem_fault = 0;
 
     setup ();
 
-    MODEM_DISABLE;
-   
+    TMR0ON = 0; //timer de 1ms fica desligado
 
-    TMR0ON = 0;
+    MODEM_DISABLE;
+
 
     while (1) {
         
 
       SINALIZA_NORMAL;
-
-       if ( global_timer.on1seg ) {
-            cnt_tempo_transmissao++; 
-        }
-
     
         // Verifica se existe dado na serial para processar
         if (modem_power_status) {
@@ -200,16 +196,9 @@ int main() {
         }
 
        
-        if ( cnt_modem_fault >= 30 ) {
-           cnt_modem_fault = 0;
-           if (modem_power_status == 1) {
-               MODEM_ENABLE;
-           } else {
-               MODEM_DISABLE;
-           }
-        }
-
-
+       if ( global_timer.on1seg ) {
+            cnt_tempo_transmissao++;
+       }
 
         // Maquina do Modem rodando
         if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
@@ -220,15 +209,14 @@ int main() {
             ADC_Initialize();
 
             check_vbat();
-            cnt_tempo_transmissao = 0;
             MODEM_ENABLE;
             state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
             cnt_modem_fault = 0;
+            cnt_tempo_transmissao++;
             printD("main - cnt_tempo_transmissao START");
         }
-           
+      
         ret = modem_handler();
-
 
         if (0 == ret ) {
             // Modem nao esta como deveria
@@ -239,14 +227,24 @@ int main() {
             SINALIZA_MODEM_FAULT;
 
         } else {
-            
             //maquina do modem nao retornou erro
             cnt_modem_fault = 0;
+            
             if ( SUCCESS == ret ) {
-                //tudo certo
+                //TUDO Certo - retornou o fim da maquina.
                 cnt_tempo_transmissao = 0;
-                Reset();//Resetando tudo e voltando para o modo baixo consumo.
+                Reset();  //Resetando tudo e voltando para o modo baixo consumo.
             }
+        }
+
+
+        if ( cnt_modem_fault >= 30 ) {
+           cnt_modem_fault = 0;
+           if (modem_power_status == 1) {
+               MODEM_ENABLE;
+           } else {
+               MODEM_DISABLE;
+           }
         }
 
 

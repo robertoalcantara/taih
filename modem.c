@@ -521,14 +521,14 @@ unsigned char modem_handler(void) {
 
           /* Modem Ligado... */
 
-        if (global_timer.on1seg) {
+        if ( global_timer.on1seg ) {
+            //tempo maximo de execucao da maquina completa de 500s.
             modem_global_timeout++;
-
-            if (modem_global_timeout >= 400) {
+            if (modem_global_timeout >= TIMEOUT_STATE_MODEM) {
                 modem_global_timeout = 0;
                 state_main = 0;
-                MODEM_DISABLE;
-                printf("\r\nGLB TIMEOUT\r\n");
+                printD("\r\nGLB TIMEOUT\r\n");
+
             }
         }
 
@@ -564,8 +564,6 @@ unsigned char modem_handler(void) {
                 break;
 
             case 3:
-                LED_D7_SetHigh();
-
                 if (modem_enter_gprs() == SUCCESS) {
                     state_main++;
                     state_tx_http = 0;
@@ -574,8 +572,6 @@ unsigned char modem_handler(void) {
                 break;
 
             case 4:
-                 LED_D7_SetHigh();
-
                 if (modem_tx_http()==SUCCESS) {
                     state_main++;
                     printD("indo p/ state_main: 5");
@@ -583,7 +579,6 @@ unsigned char modem_handler(void) {
                 break;
                 
             case 5:
-                LED_D7_SetLow();
                 printD("state_main: 5");
                 printD("MAIN SCUCESS");
                 state_main++;

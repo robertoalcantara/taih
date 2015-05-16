@@ -30,6 +30,12 @@
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
 
+#ifdef DEBUG
+    #define TIMEOUT_STATE_MODEM 5000
+#else
+    #define TIMEOUT_STATE_MODEM 500
+#endif
+
 extern unsigned long vbat;
 extern unsigned char rx_data_available;
 extern unsigned char rx_data[RX_BUFFER_SIZE];
@@ -50,7 +56,6 @@ typedef struct t_global_timer {
       
       unsigned char aux_10ms;
       unsigned char aux_100ms;
-      unsigned char aux_1s;
 
 } T_GLOBAL_TIMER ;
 
