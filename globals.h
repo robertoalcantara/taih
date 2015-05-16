@@ -25,6 +25,7 @@
 
 #define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
+#define LOW_BATTERY 10
 
 #define ERASE_FLASH_BLOCKSIZE 64
 

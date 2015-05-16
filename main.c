@@ -72,8 +72,10 @@ void setup (void) {
 }
 
 
-void check_vbat(void){
-
+unsigned char check_vbat(void){
+    
+/* Bateria ja muito baixa. Modem morre com <747 */
+#define LOW_BATTERY_LIMIT 775
     
 #ifdef DEBUG
     char tmp[15];
@@ -82,11 +84,18 @@ void check_vbat(void){
     VBAT_CONTROL_SetLow();
     vbat = ADC_GetConversion(channel_AN4);
     VBAT_CONTROL_SetHigh();
-    
+
 #ifdef DEBUG
     sprintf(tmp,"B:%lu", vbat);
     printD(tmp);
-#endif            
+#endif
+    
+
+    if (vbat <= LOW_BATTERY_LIMIT) {
+        return LOW_BATTERY;
+    }
+
+    return 1;
 }
 
 
@@ -101,7 +110,7 @@ void handler_sinalizacao(void) {
 
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
-            if ( 5 == cnt_live ) {
+            if ( 7 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
@@ -199,13 +208,27 @@ int main() {
 
         // Maquina do Modem rodando
         if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
+#ifdef DEBUG
+            EUSART2_Initialize();
+#endif
+            ADC_Initialize();
+
+            if ( check_vbat() == LOW_BATTERY) {
+                /* Nao da mais pra ligar o modem */
+                printD("main - LOW BATTERY");
+                cnt_tempo_transmissao = TEMPO_TRANSMISSAO - 10; //forcando passar aqui e checar a bateria novamente em 10s
+                LED_D6_SetHigh();
+                LED_D7_SetHigh();
+                __delay_ms(10);
+                LED_D6_SetLow();
+                LED_D7_SetLow();
+
+                goto battery_error;
+            }
 
             TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
             EUSART1_Initialize();
-            EUSART2_Initialize();
-            ADC_Initialize();
 
-            check_vbat();
             MODEM_ENABLE;
             state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
             cnt_modem_fault = 0;
@@ -252,8 +275,9 @@ int main() {
            }
         }
 
-
         handler_sinalizacao();
+
+ battery_error:  //nem olha a sinalizacao em low battery.
 
         /* flags de tempo */
 
