@@ -21,7 +21,7 @@
 #define DEBUG 1
 
 #ifdef DEBUG
-    #define TEMPO_TRANSMISSAO 30
+    #define TEMPO_TRANSMISSAO 1800   //transmissao a cada 30 minutos.
 #else
     #define TEMPO_TRANSMISSAO 600
 #endif
@@ -204,6 +204,10 @@ int main() {
       
        if ( global_timer.on1seg ) {
             cnt_tempo_transmissao++;
+            //Workarround para o modem que fica ligando:
+            if ( (0==modem_power_status) && 1==PWR_STAT_GetValue() ) {
+                MODEM_DISABLE;
+            }
        }
 
         // Maquina do Modem rodando
