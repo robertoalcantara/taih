@@ -503,10 +503,11 @@ unsigned char modem_tx_http( void ) {
     return 1;
 
 http_error:
-    printD("n\r ERR http_error \n\r");
+    printD("n\r ERR http_error. Indo para state_main = 3 !!! \n\r");
     EXPECT_ERROR;
     RX_DATA_ACK;
     state_tx_http = 0;
+    state_main = 3; //nao tem o que fazer, tentar de novo conexao gprs
     return 0;
 
 
@@ -528,10 +529,12 @@ unsigned char modem_handler(void) {
             //tempo maximo de execucao da maquina completa de 500s.
             modem_global_timeout++;
             if (modem_global_timeout >= TIMEOUT_STATE_MODEM) {
-                modem_global_timeout = 0;
                 state_main = 0;
                 printD("\r\nGLB TIMEOUT\r\n");
 
+                if (modem_global_timeout >= TIMEOUT_PERMANENT_MODEM) {
+                    Reset(); //nao vai conseguir transmitir, pelo jeito.
+                }
             }
         }
 
