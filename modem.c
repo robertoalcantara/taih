@@ -65,7 +65,8 @@ void delay_10ms(unsigned long vl ) {
 
 
 int power_modem( char enable ) {
-
+    static unsigned int cnt = 0;
+    
     while ( PWR_STAT_GetValue() != enable ) {
         MODEM_PWR_SetLow();
         LED_D7_SetLow();
@@ -75,8 +76,15 @@ int power_modem( char enable ) {
         delay_10ms(150);
         MODEM_PWR_SetLow();
         LED_D7_SetLow();
-        delay_10ms(300); 
+        delay_10ms(300);
+        cnt ++;
+
+        if (cnt>20) {
+            printD("Power modem: Reset()");
+            Reset();
+        }
     }
+    cnt = 0;
 
 }
 
@@ -533,6 +541,7 @@ unsigned char modem_handler(void) {
                 printD("\r\nGLB TIMEOUT\r\n");
 
                 if (modem_global_timeout >= TIMEOUT_PERMANENT_MODEM) {
+                    printD("\r\nGLB TIMEOUT Reset()\r\n");
                     Reset(); //nao vai conseguir transmitir, pelo jeito.
                 }
             }
