@@ -233,6 +233,11 @@ int main() {
                 //ja esta conectado ao carregador, mas estava em bateria baixa.
                 //histerese do carregador!
                 if (vbat <= LOW_BATTERY_HISTERESYS_LIMIT) {
+                    LED_D6_SetHigh();
+                    LED_D7_SetHigh();
+                    __delay_ms(10);
+                    LED_D6_SetLow();
+                    LED_D7_SetLow();
                     goto battery_error;
                 }
             }
