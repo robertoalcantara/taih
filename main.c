@@ -21,7 +21,7 @@
 #define DEBUG 1
 
 #ifdef DEBUG
-    #define TEMPO_TRANSMISSAO 1800   //transmissao a cada 30 minutos.
+    #define TEMPO_TRANSMISSAO 600   //transmissao a cada 30 minutos.
 #else
     #define TEMPO_TRANSMISSAO 600
 #endif
@@ -75,7 +75,6 @@ void setup (void) {
 unsigned char check_vbat(void){
     
 /* Bateria ja muito baixa. Modem morre com <747 */
-#define LOW_BATTERY_LIMIT 775
     
 #ifdef DEBUG
     char tmp[15];
@@ -230,6 +229,13 @@ int main() {
 
                 goto battery_error;
             }
+            if ( 1 == flag_low_bat ) {
+                //ja esta conectado ao carregador, mas estava em bateria baixa.
+                //histerese do carregador!
+                if (vbat <= LOW_BATTERY_HISTERESYS_LIMIT) {
+                    goto battery_error;
+                }
+            }
 
             flag_low_bat = 0;
             TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
@@ -273,9 +279,11 @@ int main() {
 
         if ( cnt_modem_fault >= 30 ) {
            printD("main - modem fault>30)");
+           state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
            cnt_modem_fault = 0;
            if (modem_power_status == 1) {
                MODEM_ENABLE;
+
            } else {
                MODEM_DISABLE;
            }

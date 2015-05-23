@@ -457,7 +457,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=1&data=", state_tx_http);
+            _tx("id=3&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
