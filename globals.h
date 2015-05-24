@@ -29,16 +29,18 @@
 #define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
 #define LOW_BATTERY 10
+#define LOW_BATTERY_LIMIT 780
+#define LOW_BATTERY_HISTERESYS_LIMIT 850
+
 
 #define ERASE_FLASH_BLOCKSIZE 64
 
 #define SUCCESS 200 /* Final da maquina de "estado com sucesso*/
 
-#ifdef DEBUG
-    #define TIMEOUT_STATE_MODEM 5000
-#else
-    #define TIMEOUT_STATE_MODEM 500
-#endif
+
+#define TIMEOUT_STATE_MODEM 400
+
+#define TIMEOUT_PERMANENT_MODEM TIMEOUT_STATE_MODEM*4
 
 extern unsigned long vbat;
 extern unsigned char rx_data_available;
