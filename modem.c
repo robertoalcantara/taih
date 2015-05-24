@@ -555,6 +555,7 @@ unsigned char modem_handler(void) {
                 state_main++;
                 http_pack_len = 0; //tamanho do payload
                 printD("indo p/ state_main: 1");
+                modem_global_timeout = 0;
                 break;
 
             case 1:

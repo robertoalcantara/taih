@@ -303,8 +303,8 @@ battery_error:
         //se a bateria estiver baixa nao sinalizar no handler. Sinalizacao propria no vbat
         handler_sinalizacao();
     } else {
-           LED_D6_SetLow();
-           LED_D7_SetLow();
+       LED_D6_SetLow();
+       LED_D7_SetLow();
     }
  
         /* flags de tempo */
