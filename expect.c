@@ -23,7 +23,6 @@ unsigned char expect( char* source, char* target, unsigned char timeout, char fl
 
     if ( global_timer.on1seg  ) {
         timeout_count --;
-
     }
     if ( timeout_count <= 0 ) {
         /* Not found */

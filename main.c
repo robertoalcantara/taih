@@ -21,7 +21,7 @@
 #define DEBUG 1
 
 #ifdef DEBUG
-    #define TEMPO_TRANSMISSAO 600   //transmissao a cada 30 minutos.
+    #define TEMPO_TRANSMISSAO 20   //transmissao a cada 30 minutos.
 #else
     #define TEMPO_TRANSMISSAO 600
 #endif
@@ -39,6 +39,8 @@ unsigned char modem_power_status = 0;
 
 unsigned char sinalizacao_status = 0;
 unsigned long vbat;
+
+unsigned char low_speed = 0;
 
 
 
@@ -68,6 +70,10 @@ void setup (void) {
 
     global_timer.aux_100ms = 0;
     global_timer.aux_10ms = 0;
+
+    #ifdef DEBUG
+            EUSART2_Initialize();
+    #endif
 
 }
 
@@ -102,6 +108,7 @@ void handler_sinalizacao(void) {
     static unsigned char cnt_live = 0;
     static unsigned char cnt_ack = 0;
 
+
     if ( global_timer.on1seg ) cnt_live++;
 
     if ( global_timer.on100ms ) cnt_ack++;
@@ -109,7 +116,7 @@ void handler_sinalizacao(void) {
 
     switch (sinalizacao_status & 0x0F) {
         case SINALIZACAO_NORMAL:
-            if ( 7 == cnt_live ) {
+            if ( 3 == cnt_live ) {
                 cnt_live = 0;
                 LED_D6_SetHigh();
             } else {
@@ -190,76 +197,60 @@ int main() {
 
     setup ();
 
-    TMR0ON = 0; //timer de 1ms fica desligado
 
     MODEM_DISABLE;
+    TMR0ON = 0; //timer de 1ms fica desligado
+
+    OSCCON = 0x02; //31.25k  modo lento
+    low_speed = 1;
+
+    while ( low_speed ) {
+        //low speed on!
+
+        if ( (0==modem_power_status) && 1==PWR_STAT_GetValue() ) {
+            MODEM_DISABLE;
+        }
+
+        cnt_tempo_transmissao = cnt_tempo_transmissao + 10;
+        if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { 
+            low_speed = 0;
+        }
+
+        LED_D6_SetHigh();
+        __delay_ms(1); //64 vezes mais lento...
+        LED_D6_SetLow();
+
+        ClrWdt();
+        IDLEN = 1; //sleep entra em modo idle
+        SCS1 = 1;
+        SCS0 = 0;
+        Sleep(); // So sai na interrupcao do tmr0 ou tmr1  (1seg ou 1ms)
+    }
+
+    OSCCON = 0x42; //high speed!
+    TMR1ON = 0; //nao precisa mais dele
+    flag_low_bat = 0;
+    TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
+
+    ADC_Initialize();
+    EUSART1_Initialize();
+
+    MODEM_ENABLE;
+    state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
+    cnt_modem_fault = 0;
+
+    printD("main - cnt_tempo_transmissao START");
 
 
     while (1) {
         
-       SINALIZA_NORMAL;
-
-      
-       if ( global_timer.on1seg ) {
-            cnt_tempo_transmissao++;
-            //Workarround para o modem que fica ligando:
-            if ( (0==modem_power_status) && 1==PWR_STAT_GetValue() ) {
-                MODEM_DISABLE;
-            }
-       }
-
-        // Maquina do Modem rodando
-        if ( cnt_tempo_transmissao == TEMPO_TRANSMISSAO ) { //em segundos
-#ifdef DEBUG
-            EUSART2_Initialize();
-#endif
-            ADC_Initialize();
-
-            if ( check_vbat() == LOW_BATTERY) {
-                /* Nao da mais pra ligar o modem */
-                flag_low_bat = 1;
-                printD("main - LOW BATTERY");
-                cnt_tempo_transmissao = TEMPO_TRANSMISSAO - 10; //forcando passar aqui e checar a bateria novamente em 10s
-                LED_D6_SetHigh();
-                LED_D7_SetHigh();
-                __delay_ms(10);
-                LED_D6_SetLow();
-                LED_D7_SetLow();
-
-                goto battery_error;
-            }
-            if ( 1 == flag_low_bat ) {
-                //ja esta conectado ao carregador, mas estava em bateria baixa.
-                //histerese do carregador!
-                if (vbat <= LOW_BATTERY_HISTERESYS_LIMIT) {
-                    LED_D6_SetHigh();
-                    LED_D7_SetHigh();
-                    __delay_ms(10);
-                    LED_D6_SetLow();
-                    LED_D7_SetLow();
-                    goto battery_error;
-                }
-            }
-
-            flag_low_bat = 0;
-            TMR0ON = 1; //ligando todas as contagens e nao mais so a de 1s
-            EUSART1_Initialize();
-
-            MODEM_ENABLE;
-            state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
-            cnt_modem_fault = 0;
-            cnt_tempo_transmissao++;
-            printD("main - cnt_tempo_transmissao START");
-        }
-      
+        SINALIZA_NORMAL;
+  
         ret = modem_handler();
 
-        // Verifica se existe dado na serial para processar
-        if (modem_power_status) {
-            //so verifica se o modem estiver ligado.
-            serial_buffer_copy();
-            modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
-        }
+        serial_buffer_copy();
+        modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+        
 
         if (0 == ret ) {
             // Modem nao esta como deveria
@@ -274,23 +265,25 @@ int main() {
             cnt_modem_fault = 0;
             
             if ( SUCCESS == ret ) {
-                //TUDO Certo - retornou o fim da maquina.
-                cnt_tempo_transmissao = 0;
                 Reset();  //Resetando tudo e voltando para o modo baixo consumo.
             }
         }
 
 
-        if ( cnt_modem_fault >= 30 ) {
-           printD("main - modem fault>30)");
-           state_main = 0; //iniciando pra valer a maquina de estado do modem, comecou em 99
-           cnt_modem_fault = 0;
+        if ( cnt_modem_fault >= 10 ) {
+           printD("main - modem fault>10)");
+           state_main = 0; //iniciando novamente a maquina do modem
+
            if (modem_power_status == 1) {
                MODEM_ENABLE;
 
            } else {
                MODEM_DISABLE;
            }
+
+            if ( cnt_modem_fault >= 100 ) {
+                Reset(); //:-( nao sei mais o que fazer...
+            }
         }
 
         
@@ -301,11 +294,7 @@ battery_error:
      if ( 0 == flag_low_bat) {
         //se a bateria estiver baixa nao sinalizar no handler. Sinalizacao propria no vbat
         handler_sinalizacao();
-    } else {
-       LED_D6_SetLow();
-       LED_D7_SetLow();
-    }
- 
+     }
         /* flags de tempo */
 
         global_timer.on1seg  = 0;

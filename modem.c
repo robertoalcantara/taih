@@ -19,6 +19,7 @@
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
 #define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
+
 #define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
 #define _async_comp(A) strcmp( rx_data, A )
@@ -27,8 +28,11 @@
 #define _nonblock_wait(A) if ( global_timer.on1seg ) { location_tmp--; if (location_tmp == 0) { A++; } }
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
-#define DELAY_ATCBAND 20 /* delay em s apos um cband - 15 recomendando producao*/
-
+#ifdef DEBUG
+#define DELAY_ATCBAND 5 /* delay em s apos um cband - 15 recomendando producao*/
+#else
+#define DELAY_ATCBAND 20
+#endif
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
 unsigned char state_location = 0;
@@ -70,13 +74,13 @@ int power_modem( char enable ) {
     while ( PWR_STAT_GetValue() != enable ) {
         MODEM_PWR_SetLow();
         LED_D7_SetLow();
-        delay_10ms(100);
+        (low_speed) ? delay_10ms(2):delay_10ms(100);
         MODEM_PWR_SetHigh();
         LED_D7_SetHigh();
-        delay_10ms(150);
+        (low_speed) ? delay_10ms(3):delay_10ms(150);
         MODEM_PWR_SetLow();
         LED_D7_SetLow();
-        delay_10ms(300);
+        (low_speed) ? delay_10ms(5):delay_10ms(300);
         cnt ++;
 
         if (cnt>20) {
@@ -188,7 +192,7 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 7:
-            _expect("OK", 2, state_setup, setup_error);
+            _expect("OKz", 2, state_setup, setup_error);
             break;
 
         case 8:
@@ -286,6 +290,7 @@ unsigned char modem_query_band( void ) {
     return 0;
 
 band_error:
+    printD( "band_error");
     state_band = 0;
     EXPECT_ERROR;
     RX_DATA_ACK; //descarta o buffer
@@ -457,7 +462,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=3&data=", state_tx_http);
+            _tx("id=4&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
@@ -529,80 +534,71 @@ http_error:
 unsigned char modem_handler(void) {
     if (PWR_STAT_GetValue() != modem_power_status) { return 0; } //FAULT
     
-    if ( modem_power_status ) {
-
-          /* Modem Ligado... */
-
-        if ( global_timer.on1seg ) {
-            //tempo maximo de execucao da maquina completa de 500s.
-            modem_global_timeout++;
-            if (modem_global_timeout >= TIMEOUT_STATE_MODEM) {
-                state_main = 0;
-                printD("\r\nGLB TIMEOUT\r\n");
-
-                if (modem_global_timeout >= TIMEOUT_PERMANENT_MODEM) {
-                    printD("\r\nGLB TIMEOUT Reset()\r\n");
-                    Reset(); //nao vai conseguir transmitir, pelo jeito.
-                }
-            }
+    if ( global_timer.on1seg ) {
+        //tempo maximo de execucao da maquina completa de 500s.
+        modem_global_timeout++;
+        if (modem_global_timeout >= TIMEOUT_STATE_MODEM) {
+            state_main = 0;
+            printD("\r\nGLB TIMEOUT\r\n");
+            return 0; //faut
         }
-
-        switch(state_main) {
-
-            case 0:
-                /* Zerar  a maquina de configuracao do modem */
-                state_setup = 0;
-                state_main++;
-                http_pack_len = 0; //tamanho do payload
-                printD("indo p/ state_main: 1");
-                modem_global_timeout = 0;
-                break;
-
-            case 1:
-                /* Esperar a maquina de config do modem encerrar */
-                if (modem_setup() == SUCCESS) {
-                    state_main++;
-                    state_location = 0; /* Zera a maq de estado de query de redes */
-                    state_band = 0; /* Zera a maq de estado da sequencia das bandas */
-                    state_enter_gprs = 0;
-                    indice_banda = 0; 
-                    RESET_FLASH; //inicia o ponteiro da flash. just in case (commit ao final tb o fara).
-                    printD("indo p/ state_main: 2");
-
-                }
-                break;
-
-            case 2:
-                if (modem_query_erbs() == SUCCESS) {
-                    state_enter_gprs = 0;
-                    state_main++;
-                    printD("indo p/ state_main: 3");
-                }
-                break;
-
-            case 3:
-                if (modem_enter_gprs() == SUCCESS) {
-                    state_main++;
-                    state_tx_http = 0;
-                    printD("indo p/ state_main: 4");
-                }
-                break;
-
-            case 4:
-                if (modem_tx_http()==SUCCESS) {
-                    state_main++;
-                    printD("indo p/ state_main: 5");
-                }
-                break;
-                
-            case 5:
-                printD("state_main: 5");
-                printD("MAIN SCUCESS");
-                state_main++;
-                return SUCCESS;
-        }
-
     }
+
+    switch(state_main) {
+
+        case 0:
+            /* Zerar  a maquina de configuracao do modem */
+            state_setup = 0;
+            state_main++;
+            http_pack_len = 0; //tamanho do payload
+            printD("indo p/ state_main: 1");
+            modem_global_timeout = 0;
+            break;
+
+        case 1:
+            /* Esperar a maquina de config do modem encerrar */
+            if (modem_setup() == SUCCESS) {
+                state_main++;
+                state_location = 0; /* Zera a maq de estado de query de redes */
+                state_band = 0; /* Zera a maq de estado da sequencia das bandas */
+                state_enter_gprs = 0;
+                indice_banda = 0;
+                RESET_FLASH; //inicia o ponteiro da flash. just in case (commit ao final tb o fara).
+                printD("indo p/ state_main: 2");
+
+            }
+            break;
+
+        case 2:
+            if (modem_query_erbs() == SUCCESS) {
+                state_enter_gprs = 0;
+                state_main++;
+                printD("indo p/ state_main: 3");
+            }
+            break;
+
+        case 3:
+            if (modem_enter_gprs() == SUCCESS) {
+                state_main++;
+                state_tx_http = 0;
+                printD("indo p/ state_main: 4");
+            }
+            break;
+
+        case 4:
+            if (modem_tx_http()==SUCCESS) {
+                state_main++;
+                printD("indo p/ state_main: 5");
+            }
+            break;
+
+        case 5:
+            printD("state_main: 5");
+            printD("MAIN SCUCESS");
+            state_main++;
+            return SUCCESS;
+    }
+
     
     
     return 1;

@@ -62,10 +62,14 @@ typedef struct t_global_timer {
       
       unsigned char aux_10ms;
       unsigned char aux_100ms;
+      unsigned char aux_1seg;
+
 
 } T_GLOBAL_TIMER ;
 
 extern volatile T_GLOBAL_TIMER global_timer;
+extern unsigned char low_speed;
+
 
 int x;
 #define RX_DATA_ACK rx_data_index = 0; rx_data_available = 0; rx_data[0]=0; //for (x=0;x<RX_BUFFER_SIZE;x++) rx_data[x]=0;

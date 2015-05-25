@@ -67,17 +67,14 @@ void TMR1_Initialize(void)
 {
     //Set the Timer to the options selected in the GUI
 
-    //T1OSCEN disabled; T1RD16 disabled; T1CKPS 1:8; TMR1CS FOSC/4; T1SYNC do_not_synchronize; TMR1ON disabled; 
-    T1CON = 0x34;
+    T1CON = 0x24;
 
     //T1GVAL disabled; T1GSPM disabled; T1GSS T1G; T1GTM disabled; T1GPOL low; TMR1GE disabled; T1GGO done; 
     T1GCON = 0x00;
 
-    //TMR1H 11; 
-    TMR1H = 0x0B;
+    TMR1H = 0xB4;
 
-    //TMR1L 220; 
-    TMR1L = 0xDC;
+    TMR1L = 0x51;
 
     // Load the TMR value to reload variable
     timer1ReloadVal=TMR1;
@@ -168,8 +165,6 @@ void TMR1_ISR(void)
     TMR1L = (uint8_t) timer1ReloadVal;
 
     // Add your TMR1 interrupt custom code
-    global_timer.on1seg = 1;
-
 }
 
 
