@@ -157,8 +157,7 @@ void serial_buffer_copy(void){
         if (rx_data_index >= RX_BUFFER_SIZE) {
             //assert! vai dar buffer overflow.
             printD("\r\nASSERT Buffer Overflow serial_buffer_copy\r\n");
-            rx_data_index = 0;
-            rx_data[0] = 0;
+            RX_DATA_ACK;
             return;
         }
 

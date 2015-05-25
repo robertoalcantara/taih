@@ -457,7 +457,7 @@ unsigned char modem_tx_http( void ) {
             break;
 
         case 10:
-            _tx("id=3&data=", state_tx_http);
+            _tx("id=4&data=", state_tx_http);
             for (count=0; count<http_pack_len; count++) {
                 ch = (unsigned char)FLASH_ReadByte(flashAdd);
                 flashAdd++;
@@ -514,7 +514,7 @@ http_error:
     printD("n\r ERR http_error. Indo para state_main = 3 !!! \n\r");
     EXPECT_ERROR;
     RX_DATA_ACK;
-    state_tx_http = 0;
+    state_enter_gprs = 0;
     state_main = 3; //nao tem o que fazer, tentar de novo conexao gprs
     return 0;
 

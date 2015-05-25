@@ -29,7 +29,7 @@
 #define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
 #define LOW_BATTERY 10
-#define LOW_BATTERY_LIMIT 780
+#define LOW_BATTERY_LIMIT 70
 #define LOW_BATTERY_HISTERESYS_LIMIT 850
 
 
