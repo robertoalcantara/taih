@@ -21,7 +21,7 @@
 
 
 #ifdef DEBUG
-    #define TEMPO_TRANSMISSAO 600  
+    #define TEMPO_TRANSMISSAO 1800
 #else
     #define TEMPO_TRANSMISSAO 600
 #endif
