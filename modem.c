@@ -18,9 +18,9 @@
 
 
 /* executa o expect em rx_data_available. Se timeout, goto p/ label; se ok, incrementa a variavel de estado D */
-#define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
+#define _expect(A,B,D,C) exp=expect( rx_data, (char *) A, rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;RX_DATA_ACK};
 
-#define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A, B , rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
+#define _expect_keep_buffer(A,B,D,C) exp=expect( rx_data, ( char *) A,  rx_data_available);  if (EXPECT_TIMEOUT == exp ) goto C; else if ( EXPECT_FOUND == exp ) {D++;};
 
 #define _async_comp(A) strcmp( rx_data, A )
 
@@ -29,9 +29,9 @@
 #define _nonblock_wait_start(A,B) location_tmp = A; B++;
 
 #ifdef DEBUG
-#define DELAY_ATCBAND 5 /* delay em s apos um cband - 15 recomendando producao*/
+    #define DELAY_ATCBAND 20
 #else
-#define DELAY_ATCBAND 20
+    #define DELAY_ATCBAND 20
 #endif
 unsigned char state_modem = 0;
 unsigned char state_setup = 0;
@@ -165,6 +165,7 @@ unsigned char modem_setup ( void ) {
 
         case 0:
             _tx("AT\r\n", state_setup);
+            set_expect_timeout(3);
             break;
 
         case 1:
@@ -173,6 +174,7 @@ unsigned char modem_setup ( void ) {
 
         case 2:
               _tx("ATE0\r\n", state_setup); //echo off
+              set_expect_timeout(3);
               break;
 
         case 3:
@@ -181,6 +183,7 @@ unsigned char modem_setup ( void ) {
 
         case 4:
             _tx("AT+CENG=1,1\r\n", state_setup); //eng mode
+            set_expect_timeout(3);
             break;
 
         case 5:
@@ -188,11 +191,12 @@ unsigned char modem_setup ( void ) {
             break;
 
         case 6:
-            _tx("AT+CMEE=2\r\n", state_setup); //eng mode
+            _tx("AT+CMEE=2\r\n", state_setup);
+            set_expect_timeout(3);
             break;
 
         case 7:
-            _expect("OKz", 2, state_setup, setup_error);
+            _expect("OK", 2, state_setup, setup_error);
             break;
 
         case 8:
@@ -248,11 +252,12 @@ def:
 }
 
 unsigned char modem_query_band( void ) {
-
+ 
     switch( state_band ) {
         case 0:
             sprintf( str_tmp, "AT+CBAND=%s\r\n", band_modes[indice_banda] );
             _tx( str_tmp , state_band);
+             set_expect_timeout(3);
             break;
         case 1:
            _expect("OK", 5, state_band, band_error);
@@ -265,6 +270,7 @@ unsigned char modem_query_band( void ) {
             break;
         case 4:
             _tx("AT+CENG?\r\n", state_band);
+            set_expect_timeout(3);
             break;
         case 5:
              _expect_keep_buffer("OK", 5, state_band, band_error);
@@ -329,6 +335,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 0:
             _tx("AT+CENG=0\r\n", state_enter_gprs);
+            set_expect_timeout(5);
             break;
 
         case 1:
@@ -337,6 +344,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 2:
             _tx("AT+SAPBR=3,1,\"Contype\",\"GPRS\"\r\n", state_enter_gprs);
+            set_expect_timeout(3);
             break;
 
         case 3:
@@ -345,6 +353,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 4:
             _tx("AT+SAPBR=3,1,\"APN\",\"zap.vivo.com.br\"\r\n", state_enter_gprs);
+            set_expect_timeout(3);
             break;
         
         case 5:
@@ -353,6 +362,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 6:
             _tx("AT+SAPBR=3,1,\"USER\",\"vivo\"\r\n", state_enter_gprs);
+            set_expect_timeout(3);
             break;
 
         case 7:
@@ -361,6 +371,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 8:
             _tx("AT+SAPBR=3,1,\"PWD\",\"vivo\"\r\n", state_enter_gprs);
+            set_expect_timeout(3);
             break;
 
         case 9:
@@ -369,6 +380,7 @@ unsigned char modem_enter_gprs( void ) {
 
         case 10:
             _tx("AT+SAPBR=1,1\r\n", state_enter_gprs);
+            set_expect_timeout(15);
             break;
 
         case 11:
@@ -399,7 +411,6 @@ gprs_error:
    printD("modem_enter_gprs: GPRS_ERROR");
 
     EXPECT_ERROR;
-    printf("\r\nERR2 modem_enter_gprs\r\n");
     state_enter_gprs = 0;
     RX_DATA_ACK; //descarta o buffer
     return 0;
@@ -418,6 +429,7 @@ unsigned char modem_tx_http( void ) {
         case 0:
             flashAdd = BASE_ADDR; //endereco inicial na flash para ler
             _tx("AT+HTTPINIT\r\n", state_tx_http);
+            set_expect_timeout(3);
             break;
 
         case 1:
@@ -426,6 +438,7 @@ unsigned char modem_tx_http( void ) {
 
         case 2:
             _tx("AT+HTTPPARA=\"CID\",1\r\n", state_tx_http);
+            set_expect_timeout(3);
             break;
 
         case 3:
@@ -435,6 +448,7 @@ unsigned char modem_tx_http( void ) {
         case 4:
             _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44/api/device\"\r\n", state_tx_http);
             //          _tx("AT+HTTPPARA=\"URL\",\"http://50.16.199.44:2000\"\r\n", state_tx_http);
+            set_expect_timeout(3);
             break;
 
         case 5:
@@ -443,6 +457,7 @@ unsigned char modem_tx_http( void ) {
 
         case 6:
             _tx("AT+HTTPPARA=\"CONTENT\",\"application/x-www-form-urlencoded\"\r\n", state_tx_http);
+            set_expect_timeout(3);
             break;
 
         case 7:
@@ -455,6 +470,7 @@ unsigned char modem_tx_http( void ) {
             printf("AT+HTTPDATA=%d,20000\r\n", http_tx_len);
             state_tx_http++;
             RX_DATA_ACK;
+            set_expect_timeout(10);
             break;
 
         case 9:
@@ -472,6 +488,7 @@ unsigned char modem_tx_http( void ) {
             EUSART1_Write('!');
             printf("%s", str_tmp);
             EUSART1_Write('@');
+            set_expect_timeout(10);
             break;
 
         case 11:
@@ -480,6 +497,7 @@ unsigned char modem_tx_http( void ) {
 
         case 12:
             _tx("AT+HTTPACTION=1\r\n", state_tx_http);
+            set_expect_timeout(10);
             break;
 
         case 13:
@@ -488,6 +506,7 @@ unsigned char modem_tx_http( void ) {
 
         case 14:
             _tx("AT+HTTPTERM\r\n", state_tx_http); //detach da rede
+            set_expect_timeout(10);
             break;
 
         case 15:
@@ -497,6 +516,7 @@ unsigned char modem_tx_http( void ) {
 
         case 16:
             _tx("AT+CGATT=0\r\n", state_tx_http); //detach da rede
+            set_expect_timeout(3);
             break;
         
         case 17:
@@ -538,12 +558,20 @@ unsigned char modem_handler(void) {
         //tempo maximo de execucao da maquina completa de 500s.
         modem_global_timeout++;
         if (modem_global_timeout >= TIMEOUT_STATE_MODEM) {
+            modem_global_timeout = 0;
             state_main = 0;
             printD("\r\nGLB TIMEOUT\r\n");
             return 0; //faut
         }
     }
 
+
+       if ( global_timer.on1seg ) {
+            LED_D7_SetHigh();
+            __delay_ms(10);
+            LED_D7_SetLow();
+        }
+    
     switch(state_main) {
 
         case 0:

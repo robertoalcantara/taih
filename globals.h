@@ -9,6 +9,10 @@
 #ifndef GLOBALS_H
 #define	GLOBALS_H
 
+
+#define DEBUG 1
+
+
 #define _XTAL_FREQ 2000000
 
 #define RX_BUFFER_SIZE 512
@@ -29,7 +33,7 @@
 #define SINALIZA_MSG_ACK    sinalizacao_status = sinalizacao_status | (0xF0 & SINALIZACAO_MSG_ACK);
 
 #define LOW_BATTERY 10
-#define LOW_BATTERY_LIMIT 70
+#define LOW_BATTERY_LIMIT 600
 #define LOW_BATTERY_HISTERESYS_LIMIT 850
 
 

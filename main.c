@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <xc.h>
 
 #include "mcc_generated_files/mcc.h"
 #include "mcc_generated_files/memory.h"
@@ -18,10 +19,9 @@
 #include "globals.h"
 #include "modem.h"
 
-#define DEBUG 1
 
 #ifdef DEBUG
-    #define TEMPO_TRANSMISSAO 20   //transmissao a cada 30 minutos.
+    #define TEMPO_TRANSMISSAO 600  
 #else
     #define TEMPO_TRANSMISSAO 600
 #endif
@@ -121,7 +121,7 @@ void handler_sinalizacao(void) {
                 LED_D6_SetHigh();
             } else {
                 LED_D6_SetLow();
-                LED_D7_SetLow();
+               // LED_D7_SetLow();
             }
             break;
 
@@ -142,10 +142,10 @@ void handler_sinalizacao(void) {
     //essa sinalizaco eh do tipo temporaria
     switch (sinalizacao_status & 0xF0) {
         case SINALIZACAO_MSG_ACK:
-            LED_D7_SetHigh();
+//            LED_D7_SetHigh();
             if ( global_timer.on10ms) {
                 sinalizacao_status = (0x0F & sinalizacao_status);
-                LED_D7_SetLow();
+//                LED_D7_SetLow();
             }
             break;            
     }
@@ -176,8 +176,7 @@ void serial_buffer_copy(void){
             if (rx_data_index == 1) { rx_data_index = 0; continue; }
 
             if (rx_data_available) { /* Buffer overrun OU conjunto de mensagens com varios \n! */ }
-
-            SINALIZA_MSG_ACK;
+            //SINALIZA_MSG_ACK;
             rx_data_available = 1;
             break;
         }
@@ -222,8 +221,6 @@ int main() {
 
         ClrWdt();
         IDLEN = 1; //sleep entra em modo idle
-        SCS1 = 1;
-        SCS0 = 0;
         Sleep(); // So sai na interrupcao do tmr0 ou tmr1  (1seg ou 1ms)
     }
 
@@ -241,17 +238,22 @@ int main() {
 
     printD("main - cnt_tempo_transmissao START");
 
+    check_vbat();
 
     while (1) {
         
         SINALIZA_NORMAL;
+        if (global_timer.on100ms){
+   LED_D6_Toggle();
+        }
+
   
         ret = modem_handler();
 
         serial_buffer_copy();
-        modem_async_parser(); //Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
+        //modem_async_parser(); //TEM BUXU!!!Ja analiza as mensagens assincronas  PROBLEMA AQUI?ANALIZAR COM CUIDADO
         
-
+    
         if (0 == ret ) {
             // Modem nao esta como deveria
             if ( global_timer.on1seg ) {
@@ -270,8 +272,8 @@ int main() {
         }
 
 
-        if ( cnt_modem_fault >= 10 ) {
-           printD("main - modem fault>10)");
+        if ( cnt_modem_fault >= 3 ) {
+           printD("main - modem fault>=3)");
            state_main = 0; //iniciando novamente a maquina do modem
 
            if (modem_power_status == 1) {
@@ -281,19 +283,14 @@ int main() {
                MODEM_DISABLE;
            }
 
-            if ( cnt_modem_fault >= 100 ) {
-                Reset(); //:-( nao sei mais o que fazer...
-            }
         }
 
         
 
-        
-battery_error:  
-
+       
      if ( 0 == flag_low_bat) {
         //se a bateria estiver baixa nao sinalizar no handler. Sinalizacao propria no vbat
-        handler_sinalizacao();
+       // handler_sinalizacao();
      }
         /* flags de tempo */
 
@@ -302,11 +299,8 @@ battery_error:
         global_timer.on10ms  = 0;
         global_timer.on1ms  = 0;
 
-
         ClrWdt();
         IDLEN = 1; //sleep entra em modo idle
-        SCS1 = 1;
-        SCS0 = 0;
         Sleep(); // So sai na interrupcao do tmr0 ou tmr1  (1seg ou 1ms)
 
     }

@@ -8,26 +8,26 @@
 #include "expect.h" 
 #include "globals.h"
 #include <stdio.h>
+#include "mcc_generated_files/mcc.h"
 
-unsigned char timeout_count = 0;
-unsigned char init_flag = 0;
+
+unsigned char timeout_expect_count = 5;
+
+void set_expect_timeout( unsigned char timeout ) {
+        timeout_expect_count = timeout;
+}
 
 /* recebe a string de origem (buffer), o que estamos procurando (target), timeout em segundos e o flag que indica que houve mudanca a ser processada */
 
-unsigned char expect( char* source, char* target, unsigned char timeout, char flag_change   ) {
+unsigned char expect( char* source, char* target, char flag_change   ) {
 
-    if ( 0 == init_flag ) {
-        init_flag = 1; /* blocking timeout count value*/
-        timeout_count = timeout;
-    }
 
     if ( global_timer.on1seg  ) {
-        timeout_count --;
+        timeout_expect_count --;
     }
-    if ( timeout_count <= 0 ) {
+    if ( timeout_expect_count <= 0 ) {
         /* Not found */
-        init_flag = 0;
-        timeout_count = timeout;
+        timeout_expect_count = DEFAULT_EXPECT_TIMEOUT;
     
         return EXPECT_TIMEOUT;
     }
@@ -36,7 +36,7 @@ unsigned char expect( char* source, char* target, unsigned char timeout, char fl
     
         if ( strstr(source, target) ) {
             /* Found */
-            init_flag = 0;
+            timeout_expect_count = DEFAULT_EXPECT_TIMEOUT;
             return EXPECT_FOUND;
         }
     }

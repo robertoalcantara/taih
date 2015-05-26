@@ -12,11 +12,16 @@
 #define EXPECT_WAITING 1
 #define EXPECT_FOUND 2
 
-#define EXPECT_ERROR init_flag=0;
 
-extern unsigned char init_flag;
+#define DEFAULT_EXPECT_TIMEOUT 5
 
-unsigned char expect( char* source, char* target, unsigned char timeout, char flag_change );
+#define EXPECT_ERROR timeout_expect_count = DEFAULT_EXPECT_TIMEOUT;
+
+extern unsigned char timeout_expect_count;
+
+unsigned char expect( char* source, char* target,  char flag_change );
+void set_expect_timeout( unsigned char timeout );
+
 
 #endif	/* EXPECT_H */
 
